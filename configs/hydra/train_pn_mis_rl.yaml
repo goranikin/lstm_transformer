@@ -1,0 +1,12 @@
+defaults:
+  - base
+  - _self_
+
+problem: mis
+mode: rl
+
+wandb:
+  name: pn_mis_rl
+
+model:
+  name: pn

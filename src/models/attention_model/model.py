@@ -3,14 +3,14 @@ from typing import Literal
 
 import torch
 import torch.nn.functional as F
+from configs.am_config import AMModelConfig
 from torch import nn
 
-from configs.am_config import AMModelConfig
-from src.models.transformer.attention_layer import (
+from src.models.attention_model.attention_layer import (
     GraphAttentionEncoder,
     MultiHeadAttention,
 )
-from src.models.transformer.layers import init_uniform_
+from src.models.attention_model.layers import init_uniform_
 
 DecodeType = Literal["greedy", "sampling"]
 ProblemType = Literal["tsp", "mis"]

@@ -1,0 +1,15 @@
+defaults:
+  - base
+  - _self_
+
+problem: tsp
+mode: supervised
+
+wandb:
+  name: am_tsp_supervised
+
+model:
+  name: am
+
+data:
+  target_algorithm: concorde

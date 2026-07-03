@@ -1,0 +1,15 @@
+defaults:
+  - base
+  - _self_
+
+problem: mis
+mode: supervised
+
+wandb:
+  name: am_mis_supervised
+
+model:
+  name: am
+
+data:
+  target_algorithm: kamis

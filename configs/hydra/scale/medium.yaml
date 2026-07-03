@@ -1,0 +1,17 @@
+name: medium
+
+train:
+  instances: 256000
+  seed: 1234
+
+validation:
+  instances: 10000
+  seed: 4321
+
+test:
+  instances: 10000
+  seed: 9999
+
+batch_size: 512
+steps_per_epoch: 500
+epochs: 100

@@ -3,7 +3,7 @@ import math
 import torch
 from torch import nn
 
-from src.models.transformer.layers import (
+from src.models.attention_model.layers import (
     FeedForward,
     Normalization,
     SkipConnection,

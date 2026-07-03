@@ -1,0 +1,12 @@
+defaults:
+  - base
+  - _self_
+
+problem: tsp
+mode: rl
+
+wandb:
+  name: pn_tsp_rl
+
+model:
+  name: pn

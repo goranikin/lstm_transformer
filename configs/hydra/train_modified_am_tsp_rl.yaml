@@ -1,0 +1,12 @@
+defaults:
+  - base
+  - _self_
+
+problem: tsp
+mode: rl
+
+wandb:
+  name: modified_am_tsp_rl
+
+model:
+  name: modified_am
