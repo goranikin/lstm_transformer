@@ -1,4 +1,19 @@
+from pathlib import Path
+
 from omegaconf import DictConfig, OmegaConf
+
+CONFIG_DIR = Path(__file__).resolve().parent
+SCALES = ("pilot", "medium")
+
+
+def load_scale(name: str):
+    if name not in SCALES:
+        raise ValueError(f"Unsupported scale: {name}. Allowed: {', '.join(SCALES)}")
+    return OmegaConf.load(CONFIG_DIR / "scale" / f"{name}.yaml")
+
+
+def load_base_trainer() -> DictConfig:
+    return OmegaConf.load(CONFIG_DIR / "base.yaml").trainer
 
 
 def default_am_config() -> DictConfig:
