@@ -3,22 +3,24 @@ import shlex
 import subprocess
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import Literal, cast
+from typing import cast
 
 from configs.validation import SCALES, load_base_trainer, load_scale
-from src.training.utils import MODEL_NAMES, PROBLEM_NAMES
-
-MatrixName = Literal["supervised-smoke", "supervised", "rl"]
-
-MATRIX_NAMES: tuple[MatrixName, ...] = ("supervised-smoke", "supervised", "rl")
-DEFAULT_MODELS = (
-    "modular_pn",
-    "modular_am",
-    "am_lstm_pointer",
-    "am_gru_pointer",
-    "am_lstm_subset",
-    "am_sigmoid_subset",
+from src.constants import (
+    DEFAULT_MATRIX_MODELS,
+    MATRIX_NAMES,
+    MODEL_NAMES,
+    MODULAR_ARCHITECTURES,
+    MODULE_TEST_PROBLEM,
+    PROBLEM_NAMES,
+    MatrixName,
 )
+from src.main.experiments.generate_smoke_data import (
+    SmokeDatasetRequest,
+    ensure_smoke_datasets,
+    missing_smoke_paths,
+)
+
 PILOT_SCALE = load_scale("pilot")
 BASE_TRAINER = load_base_trainer()
 
@@ -48,12 +50,20 @@ class MatrixDefaults:
 
 
 @dataclass(frozen=True)
+class ModuleTestPair:
+    model: str
+    run: ProblemRun
+
+
+@dataclass(frozen=True)
 class RunnerArgs:
     matrix: MatrixName
     scale: str
     models: str | None
     problems: str | None
     execute: bool
+    prepare_data: bool
+    skip_prepare_data: bool
     epochs: int | None
     steps_per_epoch: str | None
     batch_size: int | None
@@ -102,7 +112,7 @@ SUPERVISED_SMOKE_RUNS: tuple[ProblemRun, ...] = (
     ProblemRun(
         problem="mis",
         train_path="data/mis/mis30_p015_smoke_seed1234.jsonl",
-        target_algorithm="kamis",
+        target_algorithm="gurobi",
     ),
     ProblemRun(
         problem="maximum_clique",
@@ -143,7 +153,7 @@ SUPERVISED_RUNS: tuple[ProblemRun, ...] = (
         problem="mis",
         train_path="data/mis/mis100_p015_seed1234.jsonl",
         val_path="data/mis/mis100_p015_val_seed4321.jsonl",
-        target_algorithm="kamis",
+        target_algorithm="gurobi",
     ),
     ProblemRun(
         problem="maximum_clique",
@@ -213,6 +223,7 @@ MATRIX_RUNS: dict[MatrixName, tuple[ProblemRun, ...]] = {
     "supervised-smoke": SUPERVISED_SMOKE_RUNS,
     "supervised": SUPERVISED_RUNS,
     "rl": RL_RUNS,
+    "module-test": SUPERVISED_SMOKE_RUNS,
 }
 
 MATRIX_DEFAULTS: dict[MatrixName, MatrixDefaults] = {
@@ -255,6 +266,19 @@ MATRIX_DEFAULTS: dict[MatrixName, MatrixDefaults] = {
         keep_last_k=BASE_TRAINER.keep_last_k,
         baseline=BASE_TRAINER.baseline,
     ),
+    "module-test": MatrixDefaults(
+        epochs=1,
+        steps_per_epoch="1",
+        batch_size=8,
+        output_root="outputs/module_test",
+        progress_bar=False,
+        checkpoint_every=99,
+        log_every=1,
+        save_best=False,
+        save_last=False,
+        keep_last_k=1,
+        label_smoothing=0.0,
+    ),
 }
 
 
@@ -265,7 +289,15 @@ def parse_args(argv: Sequence[str] | None = None) -> RunnerArgs:
             "src.main.train Hydra overrides."
         )
     )
-    parser.add_argument("--matrix", choices=MATRIX_NAMES, default="supervised-smoke")
+    parser.add_argument(
+        "--matrix",
+        choices=MATRIX_NAMES,
+        default="supervised-smoke",
+        help=(
+            "Training matrix preset. module-test runs one supervised smoke job "
+            "per modular encoder/decoder architecture."
+        ),
+    )
     parser.add_argument(
         "--scale",
         choices=tuple(SCALES),
@@ -287,6 +319,22 @@ def parse_args(argv: Sequence[str] | None = None) -> RunnerArgs:
         "--execute",
         action="store_true",
         help="Run the generated commands. Without this flag, commands are printed only.",
+    )
+    parser.add_argument(
+        "--prepare-data",
+        action="store_true",
+        help=(
+            "Generate missing smoke JSONL files for the selected matrix runs, then exit "
+            "unless --execute is also set."
+        ),
+    )
+    parser.add_argument(
+        "--skip-prepare-data",
+        action="store_true",
+        help=(
+            "Do not auto-generate smoke data before --execute. Use when datasets are "
+            "already present."
+        ),
     )
     parser.add_argument("--epochs", type=int)
     parser.add_argument(
@@ -317,6 +365,8 @@ def parse_args(argv: Sequence[str] | None = None) -> RunnerArgs:
         models=namespace.models,
         problems=namespace.problems,
         execute=bool(namespace.execute),
+        prepare_data=bool(namespace.prepare_data),
+        skip_prepare_data=bool(namespace.skip_prepare_data),
         epochs=namespace.epochs,
         steps_per_epoch=namespace.steps_per_epoch,
         batch_size=namespace.batch_size,
@@ -358,9 +408,12 @@ def runs_by_problem(runs: Sequence[ProblemRun]) -> dict[str, ProblemRun]:
     return {run.problem: run for run in runs}
 
 
-def select_models(raw_models: str | None) -> tuple[str, ...]:
-    models = split_csv(raw_models, DEFAULT_MODELS)
-    validate_selected(models, MODEL_NAMES, "model")
+def select_models(raw_models: str | None, matrix: MatrixName) -> tuple[str, ...]:
+    models = split_csv(raw_models, DEFAULT_MATRIX_MODELS)
+    if matrix == "module-test":
+        validate_selected(models, DEFAULT_MATRIX_MODELS, "modular model")
+    else:
+        validate_selected(models, MODEL_NAMES, "model")
     return models
 
 
@@ -379,10 +432,80 @@ def select_problem_runs(
     return tuple(run_lookup[problem] for problem in problems)
 
 
+def smoke_dataset_requests(
+    runs: Sequence[ProblemRun],
+) -> tuple[SmokeDatasetRequest, ...]:
+    return tuple(
+        SmokeDatasetRequest(problem=run.problem, output_path=run.train_path)
+        for run in runs
+    )
+
+
+def uses_smoke_data(matrix: MatrixName) -> bool:
+    return matrix in ("supervised-smoke", "module-test")
+
+
+def prepare_smoke_data_for_runs(runs: Sequence[ProblemRun]) -> None:
+    requests = smoke_dataset_requests(runs)
+    missing = missing_smoke_paths(requests)
+    if not missing:
+        print("Smoke datasets already present.")
+        return
+    print(f"Generating {len(missing)} missing smoke dataset(s)...")
+    ensure_smoke_datasets(requests)
+
+
+def validate_smoke_data_for_runs(runs: Sequence[ProblemRun]) -> None:
+    missing = missing_smoke_paths(smoke_dataset_requests(runs))
+    if not missing:
+        return
+    joined = "\n  ".join(missing)
+    raise SystemExit(
+        "Missing smoke dataset file(s):\n"
+        f"  {joined}\n"
+        "Generate them with:\n"
+        "  uv run python -m src.main.experiments.generate_smoke_data\n"
+        "or rerun with --prepare-data / omit --skip-prepare-data on --execute."
+    )
+
+
+def runs_for_data_prep(
+    *,
+    matrix: MatrixName,
+    models: Sequence[str],
+    runs: Sequence[ProblemRun],
+) -> tuple[ProblemRun, ...]:
+    if matrix == "module-test":
+        return tuple(pair.run for pair in select_module_test_pairs(models, runs))
+    return tuple(runs)
+
+
+def select_module_test_pairs(
+    models: Sequence[str],
+    smoke_runs: Sequence[ProblemRun],
+) -> tuple[ModuleTestPair, ...]:
+    run_lookup = runs_by_problem(smoke_runs)
+    pairs: list[ModuleTestPair] = []
+    for model in models:
+        if model not in MODULE_TEST_PROBLEM:
+            raise SystemExit(
+                f"Model {model} is not configured for module-test. "
+                f"Allowed values: {', '.join(MODULE_TEST_PROBLEM)}"
+            )
+        problem = MODULE_TEST_PROBLEM[model]
+        if problem not in run_lookup:
+            raise SystemExit(
+                f"Missing smoke dataset for module-test problem {problem}. "
+                f"Available values: {', '.join(run_lookup)}"
+            )
+        pairs.append(ModuleTestPair(model=model, run=run_lookup[problem]))
+    return tuple(pairs)
+
+
 def resolve_settings(args: RunnerArgs) -> ResolvedSettings:
     defaults = MATRIX_DEFAULTS[args.matrix]
     scale = load_scale(args.scale)
-    use_scale = args.matrix != "supervised-smoke"
+    use_scale = args.matrix not in ("supervised-smoke", "module-test")
     return ResolvedSettings(
         scale=args.scale,
         epochs=(
@@ -493,6 +616,17 @@ def build_commands(
     runs: Sequence[ProblemRun],
     settings: ResolvedSettings,
 ) -> list[list[str]]:
+    if args.matrix == "module-test":
+        pairs = select_module_test_pairs(models, runs)
+        return [
+            build_train_command(
+                matrix=args.matrix,
+                model=pair.model,
+                run=pair.run,
+                settings=settings,
+            )
+            for pair in pairs
+        ]
     return [
         build_train_command(
             matrix=args.matrix,
@@ -516,11 +650,35 @@ def run_commands(commands: Sequence[Sequence[str]], *, execute: bool) -> None:
             subprocess.run(command, check=True)
 
 
+def print_module_test_plan(models: Sequence[str]) -> None:
+    print("Module-test encoder/decoder plan:")
+    for architecture in MODULAR_ARCHITECTURES:
+        if architecture.name not in models:
+            continue
+        problem = MODULE_TEST_PROBLEM[architecture.name]
+        print(
+            f"  {architecture.name}: {architecture.encoder} + {architecture.decoder} "
+            f"-> {problem} ({architecture.description})"
+        )
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
-    models = select_models(args.models)
+    models = select_models(args.models, args.matrix)
     runs = select_problem_runs(args.matrix, args.problems)
     settings = resolve_settings(args)
+    if args.matrix == "module-test":
+        print_module_test_plan(models)
+    data_runs = runs_for_data_prep(matrix=args.matrix, models=models, runs=runs)
+    should_prepare = args.prepare_data or (
+        args.execute and uses_smoke_data(args.matrix) and not args.skip_prepare_data
+    )
+    if should_prepare:
+        prepare_smoke_data_for_runs(data_runs)
+    elif args.execute and uses_smoke_data(args.matrix):
+        validate_smoke_data_for_runs(data_runs)
+    if args.prepare_data and not args.execute:
+        return 0
     commands = build_commands(
         args=args,
         models=models,

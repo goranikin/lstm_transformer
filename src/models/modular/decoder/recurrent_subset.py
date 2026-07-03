@@ -1,8 +1,7 @@
-from typing import Literal
-
 import torch
 from torch import nn
 
+from src.constants import RecurrentCellKind
 from src.models.modular.common import (
     attention_logits,
     init_gru_cell,
@@ -19,7 +18,7 @@ class RecurrentSubsetDecoder(nn.Module):
         self,
         d_h: int,
         tanh_clip: float,
-        cell_kind: Literal["lstm", "gru"],
+        cell_kind: RecurrentCellKind,
     ) -> None:
         super().__init__()
         self.d_h = d_h

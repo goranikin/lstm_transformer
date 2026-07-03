@@ -2,8 +2,8 @@ import torch
 from torch import nn
 
 from src.models.attention_model.attention_layer import MultiHeadAttention
+from src.constants import DecodeType
 from src.models.modular.common import (
-    DecodeType,
     attention_logits,
     init_linear,
     log_prob,

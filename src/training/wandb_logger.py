@@ -1,7 +1,9 @@
 from collections.abc import Mapping
-from typing import Any, Literal
+from typing import Any
 
 import torch
+
+from src.constants import WandbWatchLog
 
 
 class WandbLogger:
@@ -58,7 +60,7 @@ class WandbLogger:
     def watch(
         self,
         model: torch.nn.Module,
-        log: Literal["gradients", "parameters", "all"],
+        log: WandbWatchLog,
         log_freq: int,
     ) -> None:
         if self._wandb is None:

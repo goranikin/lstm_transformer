@@ -2,11 +2,13 @@ from pathlib import Path
 
 from omegaconf import DictConfig, OmegaConf
 
+from src.constants import is_modular_model
+
 CONFIG_DIR = Path(__file__).resolve().parent
 SCALES = ("pilot", "medium")
 
 
-def load_scale(name: str):
+def load_scale(name: str) -> DictConfig:
     if name not in SCALES:
         raise ValueError(f"Unsupported scale: {name}. Allowed: {', '.join(SCALES)}")
     return OmegaConf.load(CONFIG_DIR / "scale" / f"{name}.yaml")
@@ -29,20 +31,6 @@ def default_am_config() -> DictConfig:
     )
 
 
-def default_pn_config() -> DictConfig:
-    return OmegaConf.create(
-        {
-            "hidden_size": 256,
-            "num_layers": 1,
-            "dropout": 0.0,
-            "tanh_clip": 10.0,
-            "n_glimpses": 1,
-            "mask_inner": True,
-            "mask_logits": True,
-        }
-    )
-
-
 def validate_am_config(config: DictConfig) -> None:
     d_h = int(config.d_h)
     n_heads = int(config.n_heads)
@@ -51,16 +39,7 @@ def validate_am_config(config: DictConfig) -> None:
 
 
 def validate_config(cfg: DictConfig) -> None:
-    if cfg.model.name in {
-        "am",
-        "modified_am",
-        "modular_am",
-        "modular_pn",
-        "am_lstm_pointer",
-        "am_gru_pointer",
-        "am_lstm_subset",
-        "am_sigmoid_subset",
-    }:
+    if is_modular_model(cfg.model.name):
         validate_am_config(cfg.model.am)
 
     if cfg.trainer.optimizer not in {"adam", "sgd"}:
@@ -70,5 +49,5 @@ def validate_config(cfg: DictConfig) -> None:
         raise ValueError(f"Unsupported baseline: {cfg.trainer.baseline}")
 
 
-def config_to_dict(cfg: DictConfig):
+def config_to_dict(cfg: DictConfig) -> dict:
     return OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True)

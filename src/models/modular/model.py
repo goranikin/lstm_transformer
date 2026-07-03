@@ -6,17 +6,19 @@ from omegaconf import DictConfig
 from torch import nn
 
 from configs.validation import default_am_config, validate_am_config
-from src.models.modular.common import (
+from src.constants import (
     MAXIMIZE_PROBLEMS,
     MINIMIZE_PROBLEMS,
     PROBLEM_FEATURE_DIMS,
     SUBSET_PROBLEMS,
     TOTAL_PROBLEMS,
-    DecoderKind,
     DecodeType,
+    DecoderKind,
     EncoderKind,
     ObjectiveSense,
     ProblemType,
+)
+from src.models.modular.common import (
     closed_route_length,
     init_linear,
     log_prob,

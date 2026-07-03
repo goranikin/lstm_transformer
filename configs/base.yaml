@@ -5,7 +5,7 @@ defaults:
 seed: ${scale.train.seed}
 device: auto
 problem: tsp
-mode: rl
+mode: supervised
 
 paths:
   train: ???
@@ -36,7 +36,7 @@ data:
   shuffle: true
 
 model:
-  name: am
+  name: modular_am
   input_size: 2
   tsp_input_size: 2
   mis_input_size: 1

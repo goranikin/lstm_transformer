@@ -1,6 +1,6 @@
 import random
 from collections.abc import Callable, Mapping
-from typing import Any, Literal, cast
+from typing import Any, cast
 
 import numpy as np
 import torch
@@ -8,6 +8,15 @@ from omegaconf import DictConfig, OmegaConf
 from torch.utils.data import DataLoader
 
 from configs.validation import default_am_config
+from src.constants import (
+    DEFAULT_MATRIX_MODELS,
+    DecoderKind,
+    EncoderKind,
+    ModelName,
+    ProblemName,
+    is_modular_model,
+    modular_encoder_decoder,
+)
 from src.generate_data.CVRP.dataset import CVRPDataset, collate_cvrp
 from src.generate_data.KNAPSACK.dataset import KnapsackDataset, collate_knapsack
 from src.generate_data.MAX_CLIQUE.dataset import (
@@ -24,33 +33,7 @@ from src.generate_data.VERTEX_COVER.dataset import (
     VertexCoverDataset,
     collate_vertex_cover,
 )
-from src.models.attention_model.model import AttentionModel
-from src.models.modular.model import DecoderKind, EncoderKind, ModularNCOModel
-from src.models.pointer_network.model import PointerNetwork
-
-ModelName = Literal[
-    "am",
-    "modified_am",
-    "pn",
-    "modular_am",
-    "modular_pn",
-    "am_lstm_pointer",
-    "am_gru_pointer",
-    "am_lstm_subset",
-    "am_sigmoid_subset",
-]
-ProblemName = Literal[
-    "tsp",
-    "cvrp",
-    "mis",
-    "maximum_clique",
-    "minimum_vertex_cover",
-    "knapsack",
-    "orienteering",
-]
-LegacyProblemName = Literal["tsp", "mis"]
-MODEL_NAMES = tuple(ModelName.__args__)
-PROBLEM_NAMES = tuple(ProblemName.__args__)
+from src.models.modular.model import ModularNCOModel
 
 
 def set_seed(seed: int) -> None:
@@ -157,95 +140,19 @@ def build_model(
     problem: ProblemName,
     model_options: Mapping[str, Any] | DictConfig | None = None,
 ) -> torch.nn.Module:
-    options = model_options if model_options is not None else {}
-    interface = dict(options.get("interface") or {})
-    if model_name == "modular_pn" or (
-        model_name == "pn" and problem not in ("tsp", "mis")
-    ):
-        return _build_modular_model(
-            problem=problem,
-            options=options,
-            encoder_kind="lstm",
-            decoder_kind="lstm_pointer",
-        )
-    if model_name == "modular_am" or (
-        model_name == "am" and problem not in ("tsp", "mis")
-    ):
-        return _build_modular_model(
-            problem=problem,
-            options=options,
-            encoder_kind="attention",
-            decoder_kind="attention_pointer",
-        )
-    if model_name == "am_lstm_pointer":
-        return _build_modular_model(
-            problem=problem,
-            options=options,
-            encoder_kind="attention",
-            decoder_kind="lstm_pointer",
-        )
-    if model_name == "am_gru_pointer":
-        return _build_modular_model(
-            problem=problem,
-            options=options,
-            encoder_kind="attention",
-            decoder_kind="gru_pointer",
-        )
-    if model_name == "am_lstm_subset":
-        return _build_modular_model(
-            problem=problem,
-            options=options,
-            encoder_kind="attention",
-            decoder_kind="lstm_subset",
-        )
-    if model_name == "am_sigmoid_subset":
-        return _build_modular_model(
-            problem=problem,
-            options=options,
-            encoder_kind="attention",
-            decoder_kind="sigmoid_subset",
-        )
-    if model_name in ("am", "modified_am"):
-        legacy_problem = _as_legacy_problem(problem)
-        model_cls = AttentionModel
-        return model_cls(
-            config=options["am"],
-            default_problem=legacy_problem,
-            tsp_input_size=int(options.get("tsp_input_size", 2)),
-            mis_input_size=int(options.get("mis_input_size", 1)),
-            mis_context_size=int(options.get("mis_context_size", 1)),
-            loc_key=str(interface.get("loc_key", "loc")),
-            adjacency_key=str(interface.get("adjacency_key", "adjacency")),
-            target_tour_key=str(interface.get("target_tour_key", "target_tour")),
-            target_set_key=str(interface.get("target_set_key", "target_set")),
-        )
-    if model_name == "pn":
-        legacy_problem = _as_legacy_problem(problem)
-        pn_input_size = (
-            int(options.get("mis_input_size", 1))
-            if problem == "mis"
-            else int(options.get("input_size", options.get("tsp_input_size", 2)))
-        )
-        return PointerNetwork(
-            input_size=pn_input_size,
-            config=options["pn"],
-            default_problem=legacy_problem,
-            loc_key=str(interface.get("loc_key", "loc")),
-            adjacency_key=str(interface.get("adjacency_key", "adjacency")),
-            target_tour_key=str(interface.get("target_tour_key", "target_tour")),
-            target_set_key=str(interface.get("target_set_key", "target_set")),
-        )
-    raise ValueError(f"Unsupported model: {model_name}")
-
-
-def _as_legacy_problem(problem: ProblemName) -> LegacyProblemName:
-    if problem not in ("tsp", "mis"):
+    if not is_modular_model(model_name):
         raise ValueError(
-            f"Legacy AM/PN classes only support tsp/mis, got {problem}. "
-            "Use modular_am, modular_pn, am_lstm_pointer, am_gru_pointer, "
-            "am_lstm_subset, or am_sigmoid_subset for the expanded problem set."
+            f"Unsupported model: {model_name}. "
+            f"Expected one of: {', '.join(DEFAULT_MATRIX_MODELS)}"
         )
-    return problem
+    options = model_options if model_options is not None else {}
+    encoder_kind, decoder_kind = modular_encoder_decoder(model_name)
+    return _build_modular_model(
+        problem=problem,
+        options=options,
+        encoder_kind=encoder_kind,
+        decoder_kind=decoder_kind,
+    )
 
 
 def _build_modular_model(
@@ -258,7 +165,11 @@ def _build_modular_model(
     am_cfg = options.get("am") or default_am_config()
     if encoder_kind == "lstm":
         pn_options = options.get("pn")
-        if pn_options is not None and "hidden_size" in pn_options and "d_h" not in am_cfg:
+        if (
+            pn_options is not None
+            and "hidden_size" in pn_options
+            and "d_h" not in am_cfg
+        ):
             am_cfg = OmegaConf.merge(am_cfg, {"d_h": int(pn_options["hidden_size"])})
     return ModularNCOModel(
         config=cast(DictConfig, am_cfg),
@@ -280,7 +191,7 @@ def default_target_algorithm(problem: ProblemName) -> str:
     if problem == "cvrp":
         return "gurobi"
     if problem == "mis":
-        return "kamis"
+        return "gurobi"
     if problem == "maximum_clique":
         return "gurobi"
     if problem == "minimum_vertex_cover":

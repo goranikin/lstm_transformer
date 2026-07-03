@@ -1,58 +1,11 @@
 import math
-from typing import Literal
 
 import torch
 import torch.nn.functional as F
 from torch import nn
 
+from src.constants import DecodeType
 from src.models.utils import init_uniform_
-
-DecodeType = Literal["greedy", "sampling"]
-EncoderKind = Literal["lstm", "attention", "graph_attention"]
-DecoderKind = Literal[
-    "attention_pointer",
-    "lstm_pointer",
-    "gru_pointer",
-    "attention_subset",
-    "lstm_subset",
-    "gru_subset",
-    "sigmoid_subset",
-]
-ProblemType = Literal[
-    "tsp",
-    "cvrp",
-    "mis",
-    "maximum_clique",
-    "minimum_vertex_cover",
-    "knapsack",
-    "orienteering",
-]
-ObjectiveSense = Literal["min", "max"]
-
-TOTAL_PROBLEMS = {"tsp", "cvrp"}
-SUBSET_PROBLEMS = {
-    "mis",
-    "maximum_clique",
-    "minimum_vertex_cover",
-    "knapsack",
-    "orienteering",
-}
-MINIMIZE_PROBLEMS = {"tsp", "cvrp", "minimum_vertex_cover"}
-MAXIMIZE_PROBLEMS = {
-    "mis",
-    "maximum_clique",
-    "knapsack",
-    "orienteering",
-}
-PROBLEM_FEATURE_DIMS = {
-    "tsp": 2,
-    "cvrp": 3,
-    "mis": 1,
-    "maximum_clique": 1,
-    "minimum_vertex_cover": 1,
-    "knapsack": 2,
-    "orienteering": 3,
-}
 
 
 def attention_logits(
