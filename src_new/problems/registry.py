@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from src_new.constants import ProblemName
 from src_new.problems.base import Problem
 from src_new.problems.graph import GraphSubsetProblem, MaxCliqueProblem, VertexCoverProblem

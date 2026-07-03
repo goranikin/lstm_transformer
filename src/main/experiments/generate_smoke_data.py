@@ -1,7 +1,5 @@
 """Generate small JSONL smoke datasets for matrix runs."""
 
-from __future__ import annotations
-
 import argparse
 from collections.abc import Sequence
 from dataclasses import dataclass
