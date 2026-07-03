@@ -7,8 +7,8 @@ from src.models.attention_model.layers import (
     FeedForward,
     Normalization,
     SkipConnection,
-    init_uniform_,
 )
+from src.models.utils import init_uniform_
 
 
 class MultiHeadAttention(nn.Module):

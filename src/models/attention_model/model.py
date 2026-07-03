@@ -10,7 +10,7 @@ from src.models.attention_model.attention_layer import (
     GraphAttentionEncoder,
     MultiHeadAttention,
 )
-from src.models.attention_model.layers import init_uniform_
+from src.models.utils import init_uniform_
 
 DecodeType = Literal["greedy", "sampling"]
 ProblemType = Literal["tsp", "mis"]

@@ -5,10 +5,10 @@ import torch.nn.functional as F
 from torch import nn
 
 from configs.pn_config import PNModelConfig
+from src.models.utils import init_uniform_
 from src.models.pointer_network.decoder import PointerDecoder
 from src.models.pointer_network.encoder import PointerEncoder
 from src.models.pointer_network.types import PointerNetworkOutput
-from src.models.transformer.layers import init_uniform_
 
 DecodeType = Literal["greedy", "sampling"]
 ProblemType = Literal["tsp", "mis"]

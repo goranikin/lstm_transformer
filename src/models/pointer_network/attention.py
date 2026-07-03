@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from src.models.transformer.layers import init_uniform_
+from src.models.utils import init_uniform_
 
 
 class AdditiveAttention(nn.Module):
