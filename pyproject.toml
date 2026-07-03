@@ -9,6 +9,7 @@ dependencies = [
     "hydra-core>=1.3.2",
     "numpy>=2.5.0",
     "pydantic>=2.13.4",
+    "pyconcorde @ git+https://github.com/jvkersch/pyconcorde",
     "scipy>=1.18.0",
     "torch>=2.11,<2.13",
     "tqdm>=4.68.3",

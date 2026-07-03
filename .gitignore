@@ -8,3 +8,12 @@ wheels/
 
 # Virtual environments
 .venv
+
+docs/
+
+data/
+
+.DS_Store
+
+*.log
+.vscode/

@@ -136,14 +136,11 @@ def solve_concorde(
     executable: str | None = None,
     timeout_sec: float | None = None,
 ) -> TspSolution:
-    """Solve TSP with the Concorde executable."""
+    """Solve TSP with Concorde via PyConcorde or a Concorde executable."""
     coords = np.asarray(coords, dtype=np.float64)
     executable = _resolve_executable(executable, "CONCORDE_EXECUTABLE", ("concorde",))
     if executable is None:
-        raise ExternalSolverError(
-            "Concorde is not available. Put the concorde executable on PATH, set "
-            "CONCORDE_EXECUTABLE, or pass --concorde-executable /path/to/concorde."
-        )
+        return _solve_pyconcorde(coords, timeout_sec=timeout_sec)
 
     with tempfile.TemporaryDirectory(prefix="tsp_concorde_") as tmp:
         tmpdir = Path(tmp)
@@ -172,3 +169,40 @@ def solve_concorde(
             cost=tour_length(coords, tour),
             is_exact=True,
         )
+
+
+def _solve_pyconcorde(
+    coords: np.ndarray,
+    *,
+    timeout_sec: float | None = None,
+) -> TspSolution:
+    try:
+        from concorde.tsp import TSPSolver
+    except ImportError as exc:
+        raise ExternalSolverError(
+            "PyConcorde is not installed. Run `uv sync`, put the concorde "
+            "executable on PATH, set CONCORDE_EXECUTABLE, or pass "
+            "--concorde-executable /path/to/concorde."
+        ) from exc
+
+    scaled = _scaled_integer_coords(coords)
+    solver = TSPSolver.from_data(
+        scaled[:, 0],
+        scaled[:, 1],
+        norm="EUC_2D",
+        name="instance",
+    )
+    time_bound = -1 if timeout_sec is None else max(1, int(timeout_sec))
+    solution = solver.solve(time_bound=time_bound, verbose=False)
+    if not solution.found_tour:
+        raise ExternalSolverError("PyConcorde did not find a tour")
+
+    tour = [int(node) for node in solution.tour]
+    _validate_tour(tour, len(coords))
+    return TspSolution(
+        algorithm="concorde",
+        tour=tour,
+        cost=tour_length(coords, tour),
+        is_exact=True,
+        metadata={"backend": "pyconcorde"},
+    )

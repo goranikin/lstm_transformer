@@ -16,6 +16,21 @@ disjoint.
 Output files are written under `data/<problem>/`. Parent directories are
 created automatically.
 
+## Solvers
+
+| Problem | Solver used | Time limits |
+| ------- | ----------- | ----------- |
+| TSP | `concorde` | |
+| MIS | `kamis` | |
+| CVRP | `Gurobi` | 30s |
+| Knapsack | `dynamic_programming` | |
+| Max Clique | `Gurobi` | |
+| Vertex Cover | `Gurobi` | |
+| Orienteering | `Gurobi` | 30s |
+
+TSP and MIS require their external solvers to be installed and on `PATH`. See
+[TSP/README.md](TSP/README.md) and [MIS/README.md](MIS/README.md).
+
 ## Output paths
 
 | Problem | Train | Validation | Test |
@@ -30,22 +45,20 @@ created automatically.
 
 ## TSP
 
-Requires Concorde for labels. See [TSP/README.md](TSP/README.md).
+Solver: `concorde`.
 
 ```bash
-uv run python -m src.data_generating.TSP.generate \
+uv run python -m src.generate_data.TSP.generate \
   --num-instances 64000 \
   --num-nodes 50 \
   --seed 1234 \
-  --output-path data/tsp/tsp50_seed1234.jsonl
-
-uv run python -m src.data_generating.TSP.generate \
+  --output-path data/tsp/tsp50_seed1234.jsonl && \
+uv run python -m src.generate_data.TSP.generate \
   --num-instances 10000 \
   --num-nodes 50 \
   --seed 4321 \
-  --output-path data/tsp/tsp50_val_seed4321.jsonl
-
-uv run python -m src.data_generating.TSP.generate \
+  --output-path data/tsp/tsp50_val_seed4321.jsonl && \
+uv run python -m src.generate_data.TSP.generate \
   --num-instances 10000 \
   --num-nodes 50 \
   --seed 9999 \
@@ -54,22 +67,20 @@ uv run python -m src.data_generating.TSP.generate \
 
 ## CVRP
 
-Uses Gurobi with a default 30 second per-instance time limit.
+Solver: `Gurobi` (30s per-instance time limit).
 
 ```bash
-uv run python -m src.data_generating.CVRP.generate \
+uv run python -m src.generate_data.CVRP.generate \
   --num-instances 64000 \
   --num-customers 50 \
   --seed 1234 \
-  --output-path data/cvrp/cvrp50_seed1234.jsonl
-
-uv run python -m src.data_generating.CVRP.generate \
+  --output-path data/cvrp/cvrp50_seed1234.jsonl && \
+uv run python -m src.generate_data.CVRP.generate \
   --num-instances 10000 \
   --num-customers 50 \
   --seed 4321 \
-  --output-path data/cvrp/cvrp50_val_seed4321.jsonl
-
-uv run python -m src.data_generating.CVRP.generate \
+  --output-path data/cvrp/cvrp50_val_seed4321.jsonl && \
+uv run python -m src.generate_data.CVRP.generate \
   --num-instances 10000 \
   --num-customers 50 \
   --seed 9999 \
@@ -78,24 +89,22 @@ uv run python -m src.data_generating.CVRP.generate \
 
 ## MIS
 
-Requires KaMIS for labels. See [MIS/README.md](MIS/README.md).
+Solver: `kamis`.
 
 ```bash
-uv run python -m src.data_generating.MIS.generate \
+uv run python -m src.generate_data.MIS.generate \
   --num-instances 64000 \
   --num-nodes 100 \
   --edge-probability 0.15 \
   --seed 1234 \
-  --output-path data/mis/mis100_p015_seed1234.jsonl
-
-uv run python -m src.data_generating.MIS.generate \
+  --output-path data/mis/mis100_p015_seed1234.jsonl && \
+uv run python -m src.generate_data.MIS.generate \
   --num-instances 10000 \
   --num-nodes 100 \
   --edge-probability 0.15 \
   --seed 4321 \
-  --output-path data/mis/mis100_p015_val_seed4321.jsonl
-
-uv run python -m src.data_generating.MIS.generate \
+  --output-path data/mis/mis100_p015_val_seed4321.jsonl && \
+uv run python -m src.generate_data.MIS.generate \
   --num-instances 10000 \
   --num-nodes 100 \
   --edge-probability 0.15 \
@@ -105,22 +114,20 @@ uv run python -m src.data_generating.MIS.generate \
 
 ## Knapsack
 
-Uses exact `dynamic_programming` labels.
+Solver: `dynamic_programming`.
 
 ```bash
-uv run python -m src.data_generating.KNAPSACK.generate \
+uv run python -m src.generate_data.KNAPSACK.generate \
   --num-instances 64000 \
   --num-items 100 \
   --seed 1234 \
-  --output-path data/knapsack/knapsack100_seed1234.jsonl
-
-uv run python -m src.data_generating.KNAPSACK.generate \
+  --output-path data/knapsack/knapsack100_seed1234.jsonl && \
+uv run python -m src.generate_data.KNAPSACK.generate \
   --num-instances 10000 \
   --num-items 100 \
   --seed 4321 \
-  --output-path data/knapsack/knapsack100_val_seed4321.jsonl
-
-uv run python -m src.data_generating.KNAPSACK.generate \
+  --output-path data/knapsack/knapsack100_val_seed4321.jsonl && \
+uv run python -m src.generate_data.KNAPSACK.generate \
   --num-instances 10000 \
   --num-items 100 \
   --seed 9999 \
@@ -129,24 +136,22 @@ uv run python -m src.data_generating.KNAPSACK.generate \
 
 ## Maximum Clique
 
-Uses Gurobi labels.
+Solver: `Gurobi`.
 
 ```bash
-uv run python -m src.data_generating.MAX_CLIQUE.generate \
+uv run python -m src.generate_data.MAX_CLIQUE.generate \
   --num-instances 64000 \
   --num-nodes 100 \
   --edge-probability 0.5 \
   --seed 1234 \
-  --output-path data/max_clique/max_clique100_p050_seed1234.jsonl
-
-uv run python -m src.data_generating.MAX_CLIQUE.generate \
+  --output-path data/max_clique/max_clique100_p050_seed1234.jsonl && \
+uv run python -m src.generate_data.MAX_CLIQUE.generate \
   --num-instances 10000 \
   --num-nodes 100 \
   --edge-probability 0.5 \
   --seed 4321 \
-  --output-path data/max_clique/max_clique100_p050_val_seed4321.jsonl
-
-uv run python -m src.data_generating.MAX_CLIQUE.generate \
+  --output-path data/max_clique/max_clique100_p050_val_seed4321.jsonl && \
+uv run python -m src.generate_data.MAX_CLIQUE.generate \
   --num-instances 10000 \
   --num-nodes 100 \
   --edge-probability 0.5 \
@@ -156,22 +161,22 @@ uv run python -m src.data_generating.MAX_CLIQUE.generate \
 
 ## Minimum Vertex Cover
 
+Solver: `Gurobi`.
+
 ```bash
-uv run python -m src.data_generating.VERTEX_COVER.generate \
+uv run python -m src.generate_data.VERTEX_COVER.generate \
   --num-instances 64000 \
   --num-nodes 100 \
   --edge-probability 0.15 \
   --seed 1234 \
-  --output-path data/vertex_cover/vertex_cover100_p015_seed1234.jsonl
-
-uv run python -m src.data_generating.VERTEX_COVER.generate \
+  --output-path data/vertex_cover/vertex_cover100_p015_seed1234.jsonl && \
+uv run python -m src.generate_data.VERTEX_COVER.generate \
   --num-instances 10000 \
   --num-nodes 100 \
   --edge-probability 0.15 \
   --seed 4321 \
-  --output-path data/vertex_cover/vertex_cover100_p015_val_seed4321.jsonl
-
-uv run python -m src.data_generating.VERTEX_COVER.generate \
+  --output-path data/vertex_cover/vertex_cover100_p015_val_seed4321.jsonl && \
+uv run python -m src.generate_data.VERTEX_COVER.generate \
   --num-instances 10000 \
   --num-nodes 100 \
   --edge-probability 0.15 \
@@ -181,22 +186,20 @@ uv run python -m src.data_generating.VERTEX_COVER.generate \
 
 ## Orienteering
 
-Uses Gurobi with a default 30 second per-instance time limit.
+Solver: `Gurobi` (30s per-instance time limit).
 
 ```bash
-uv run python -m src.data_generating.ORIENTEERING.generate \
+uv run python -m src.generate_data.ORIENTEERING.generate \
   --num-instances 64000 \
   --num-nodes 50 \
   --seed 1234 \
-  --output-path data/orienteering/orienteering50_seed1234.jsonl
-
-uv run python -m src.data_generating.ORIENTEERING.generate \
+  --output-path data/orienteering/orienteering50_seed1234.jsonl && \
+uv run python -m src.generate_data.ORIENTEERING.generate \
   --num-instances 10000 \
   --num-nodes 50 \
   --seed 4321 \
-  --output-path data/orienteering/orienteering50_val_seed4321.jsonl
-
-uv run python -m src.data_generating.ORIENTEERING.generate \
+  --output-path data/orienteering/orienteering50_val_seed4321.jsonl && \
+uv run python -m src.generate_data.ORIENTEERING.generate \
   --num-instances 10000 \
   --num-nodes 50 \
   --seed 9999 \
@@ -205,8 +208,7 @@ uv run python -m src.data_generating.ORIENTEERING.generate \
 
 ## Notes
 
-- TSP, MIS, CVRP, Maximum Clique, Vertex Cover, and Orienteering generation
-  require their configured external solvers to produce labels.
+- See the [Solvers](#solvers) table for label algorithms and time limits.
 - Knapsack `dynamic_programming` labels scale with item count and capacity.
 - Training configs in this repo expect `paths.train` and `paths.val` to point at
   the train and validation files above, for example:
