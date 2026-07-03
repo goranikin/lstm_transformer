@@ -1,33 +1,22 @@
 import os
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
-from typing import Literal, cast
+from typing import cast
 
 import torch
-from pydantic import BaseModel, ConfigDict, Field
+from omegaconf import DictConfig
 from torch.nn.utils import clip_grad_norm_
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
+from configs.validation import config_to_dict
 from src.models.baselines.baseline import (
     ExponentialBaseline,
     RolloutBaseline,
 )
 from src.models.utils import set_decode_type_if_supported
 from src.training.utils import move_batch_to_device
-from src.training.wandb_logger import WandbConfig, WandbLogger
-
-ProblemName = Literal[
-    "tsp",
-    "cvrp",
-    "mis",
-    "maximum_clique",
-    "minimum_vertex_cover",
-    "knapsack",
-    "orienteering",
-]
-OptimizerName = Literal["adam", "sgd"]
-BaselineName = Literal["rollout", "exponential"]
+from src.training.wandb_logger import WandbLogger
 
 
 @dataclass(frozen=True)
@@ -69,37 +58,12 @@ class SolutionStatsAccumulator:
         )
 
 
-class TrainerConfig(BaseModel):
-    model_config = ConfigDict(validate_assignment=True)
-
-    problem: ProblemName
-    output_dir: str = "outputs"
-    n_epochs: int = Field(default=100, gt=0)
-    steps_per_epoch: int | None = Field(default=None, gt=0)
-    learning_rate: float = Field(default=1e-4, gt=0)
-    learning_rate_decay: float = Field(default=1.0, gt=0, le=1.0)
-    max_grad_norm: float = Field(default=1.0, gt=0)
-    label_smoothing: float = Field(default=0.0, ge=0.0, lt=1.0)
-    log_every: int = Field(default=25, gt=0)
-    checkpoint_every: int = Field(default=5, gt=0)
-    optimizer: OptimizerName = "adam"
-    baseline: BaselineName = "rollout"
-    baseline_alpha: float = Field(default=0.05, ge=0, le=1)
-    baseline_warmup_epochs: int = Field(default=1, ge=0)
-    exp_baseline_beta: float = Field(default=0.8, ge=0, le=1)
-    save_best: bool = True
-    save_last: bool = True
-    keep_last_k: int = Field(default=3, ge=0)
-    wandb: WandbConfig = Field(default_factory=WandbConfig)
-    progress_bar: bool = True
-
-
 class SupervisedTrainer:
     def __init__(
         self,
         model: torch.nn.Module,
         train_loader: DataLoader,
-        config: TrainerConfig,
+        cfg: DictConfig,
         device: torch.device,
         val_loader: DataLoader | None = None,
         wandb_logger: WandbLogger | None = None,
@@ -107,7 +71,9 @@ class SupervisedTrainer:
         self.model = model.to(device)
         self.train_loader = train_loader
         self.val_loader = val_loader
-        self.config = config
+        self.cfg = cfg
+        self.trainer = cfg.trainer
+        self.output_dir = cfg.paths.output_dir
         self.device = device
         self.optimizer = self._build_optimizer()
         self.wandb_logger = wandb_logger or WandbLogger.disabled()
@@ -115,19 +81,19 @@ class SupervisedTrainer:
         self.best_score: float | None = None
 
     def fit(self) -> None:
-        os.makedirs(self.config.output_dir, exist_ok=True)
+        os.makedirs(self.output_dir, exist_ok=True)
         with self._progress(
-            range(self.config.n_epochs),
+            range(self.trainer.epochs),
             desc="epochs",
-            total=self.config.n_epochs,
+            total=self.trainer.epochs,
             unit="epoch",
             leave=True,
         ) as epochs:
             for epoch in epochs:
-                if self.config.learning_rate_decay != 1.0:
+                if self.trainer.learning_rate_decay != 1.0:
                     self._set_learning_rate(
-                        self.config.learning_rate
-                        * (self.config.learning_rate_decay**epoch)
+                        self.trainer.learning_rate
+                        * (self.trainer.learning_rate_decay**epoch)
                     )
                 train_stats = self.train_epoch_stats(epoch)
                 message = (
@@ -178,7 +144,7 @@ class SupervisedTrainer:
                     val_stats.loss if self.val_loader is not None else train_stats.loss
                 )
                 self._save_last_and_best(epoch + 1, checkpoint_score)
-                if (epoch + 1) % self.config.checkpoint_every == 0:
+                if (epoch + 1) % self.trainer.checkpoint_every == 0:
                     self.save_checkpoint(epoch + 1)
                     self._prune_epoch_checkpoints()
 
@@ -192,7 +158,7 @@ class SupervisedTrainer:
         steps = 0
         with self._progress(
             self._epoch_batches(self.train_loader),
-            desc=f"train {epoch + 1}/{self.config.n_epochs}",
+            desc=f"train {epoch + 1}/{self.trainer.epochs}",
             total=self._train_total(),
             unit="batch",
             leave=False,
@@ -202,7 +168,7 @@ class SupervisedTrainer:
                 self.optimizer.zero_grad()
                 loss = self._supervised_loss(batch)
                 loss.backward()
-                clip_grad_norm_(self.model.parameters(), self.config.max_grad_norm)
+                clip_grad_norm_(self.model.parameters(), self.trainer.max_grad_norm)
                 self.optimizer.step()
 
                 loss_value = float(loss.detach().item())
@@ -224,7 +190,7 @@ class SupervisedTrainer:
                     lr=f"{self._current_learning_rate():.2e}",
                     refresh=False,
                 )
-                if step % self.config.log_every == 0:
+                if step % self.trainer.log_every == 0:
                     self._log(
                         f"epoch={epoch + 1} step={step} "
                         f"loss={loss_value:.6f} loss_avg={loss_avg:.6f} "
@@ -322,7 +288,7 @@ class SupervisedTrainer:
         try:
             cost, _, solution = self.model(
                 batch,
-                problem=self.config.problem,
+                problem=self.cfg.problem,
                 return_pi=True,
             )
             solution_value = getattr(self.model, "solution_value", None)
@@ -330,15 +296,15 @@ class SupervisedTrainer:
                 return cast(Callable[..., torch.Tensor], solution_value)(
                     batch,
                     solution,
-                    problem=self.config.problem,
+                    problem=self.cfg.problem,
                 ).detach()
-            if self.config.problem == "tsp":
+            if self.cfg.problem == "tsp":
                 return cost.detach()
-            if self.config.problem == "mis":
+            if self.cfg.problem == "mis":
                 if isinstance(solution, torch.Tensor):
                     return solution.detach().to(dtype=cost.dtype).sum(dim=1)
                 return -cost.detach()
-            raise ValueError(f"Unsupported problem: {self.config.problem}")
+            raise ValueError(f"Unsupported problem: {self.cfg.problem}")
         finally:
             if isinstance(previous_decode_type, str):
                 set_decode_type_if_supported(self.model, previous_decode_type)
@@ -352,9 +318,9 @@ class SupervisedTrainer:
         if callable(target_value):
             return cast(Callable[..., torch.Tensor], target_value)(
                 batch,
-                problem=self.config.problem,
+                problem=self.cfg.problem,
             ).detach()
-        if self.config.problem == "tsp":
+        if self.cfg.problem == "tsp":
             target_cost = batch.get("target_cost")
             if isinstance(target_cost, torch.Tensor):
                 return target_cost.detach()
@@ -362,24 +328,24 @@ class SupervisedTrainer:
             target_tour = self._require_tensor(batch, "target_tour").long()
             return self._tsp_cost(loc, target_tour).detach()
 
-        if self.config.problem == "mis":
+        if self.cfg.problem == "mis":
             target_size = batch.get("target_size")
             if isinstance(target_size, torch.Tensor):
                 return target_size.detach().float()
             target_set = self._require_tensor(batch, "target_set")
             return target_set.detach().float().sum(dim=1)
 
-        raise ValueError(f"Unsupported problem: {self.config.problem}")
+        raise ValueError(f"Unsupported problem: {self.cfg.problem}")
 
     def _objective_sense(self) -> str:
         objective_sense = getattr(self.model, "objective_sense", None)
         if callable(objective_sense):
-            return str(cast(Callable[..., str], objective_sense)(self.config.problem))
-        if self.config.problem == "tsp":
+            return str(cast(Callable[..., str], objective_sense)(self.cfg.problem))
+        if self.cfg.problem == "tsp":
             return "min"
-        if self.config.problem == "mis":
+        if self.cfg.problem == "mis":
             return "max"
-        raise ValueError(f"Unsupported problem: {self.config.problem}")
+        raise ValueError(f"Unsupported problem: {self.cfg.problem}")
 
     @staticmethod
     def _tsp_cost(loc: torch.Tensor, tour: torch.Tensor) -> torch.Tensor:
@@ -390,7 +356,7 @@ class SupervisedTrainer:
 
     def save_checkpoint(self, epoch: int, filename: str | None = None) -> str:
         path = os.path.join(
-            self.config.output_dir,
+            self.output_dir,
             filename or f"epoch_{epoch:03d}.pt",
         )
         torch.save(
@@ -398,18 +364,18 @@ class SupervisedTrainer:
                 "epoch": epoch,
                 "model_state_dict": self.model.state_dict(),
                 "optimizer_state_dict": self.optimizer.state_dict(),
-                "config": self.config.model_dump(),
+                "config": config_to_dict(self.cfg),
             },
             path,
         )
-        if self.config.wandb.log_checkpoints:
+        if self.cfg.wandb.log_checkpoints:
             self.wandb_logger.save_file(path)
         return path
 
     def _save_last_and_best(self, epoch: int, score: float) -> None:
-        if self.config.save_last:
+        if self.trainer.save_last:
             self.save_checkpoint(epoch, "last.pt")
-        if self.config.save_best and self._is_best_score(score):
+        if self.trainer.save_best and self._is_best_score(score):
             self.best_score = score
             self.save_checkpoint(epoch, "best.pt")
 
@@ -417,9 +383,9 @@ class SupervisedTrainer:
         return self.best_score is None or score < self.best_score
 
     def _prune_epoch_checkpoints(self) -> None:
-        keep = self.config.keep_last_k
+        keep = self.trainer.keep_last_k
         entries = []
-        for filename in os.listdir(self.config.output_dir):
+        for filename in os.listdir(self.output_dir):
             if not (filename.startswith("epoch_") and filename.endswith(".pt")):
                 continue
             raw_epoch = filename.removeprefix("epoch_").removesuffix(".pt")
@@ -431,18 +397,18 @@ class SupervisedTrainer:
         entries.sort()
         stale_entries = entries[:-keep] if keep > 0 else entries
         for _, filename in stale_entries:
-            os.remove(os.path.join(self.config.output_dir, filename))
+            os.remove(os.path.join(self.output_dir, filename))
 
     def _build_optimizer(self) -> torch.optim.Optimizer:
-        if self.config.optimizer == "adam":
+        if self.trainer.optimizer == "adam":
             return torch.optim.Adam(
-                self.model.parameters(), lr=self.config.learning_rate
+                self.model.parameters(), lr=self.trainer.learning_rate
             )
-        if self.config.optimizer == "sgd":
+        if self.trainer.optimizer == "sgd":
             return torch.optim.SGD(
-                self.model.parameters(), lr=self.config.learning_rate
+                self.model.parameters(), lr=self.trainer.learning_rate
             )
-        raise ValueError(f"Unsupported optimizer: {self.config.optimizer}")
+        raise ValueError(f"Unsupported optimizer: {self.trainer.optimizer}")
 
     def _set_learning_rate(self, learning_rate: float) -> None:
         for group in self.optimizer.param_groups:
@@ -457,20 +423,20 @@ class SupervisedTrainer:
             raise TypeError("model must define callable supervised_loss")
         return cast(Callable[..., torch.Tensor], supervised_loss)(
             batch=batch,
-            problem=self.config.problem,
-            label_smoothing=self.config.label_smoothing,
+            problem=self.cfg.problem,
+            label_smoothing=self.trainer.label_smoothing,
         )
 
     def _epoch_batches(
         self,
         loader: DataLoader,
     ) -> Iterable[dict[str, torch.Tensor]]:
-        if self.config.steps_per_epoch is None:
+        if self.trainer.steps_per_epoch is None:
             yield from loader
             return
 
         iterator = iter(loader)
-        for _ in range(self.config.steps_per_epoch):
+        for _ in range(self.trainer.steps_per_epoch):
             try:
                 yield next(iterator)
             except StopIteration:
@@ -509,12 +475,12 @@ class SupervisedTrainer:
             unit=unit,
             leave=leave,
             dynamic_ncols=True,
-            disable=not self.config.progress_bar,
+            disable=not self.trainer.progress_bar,
         )
 
     def _train_total(self) -> int | None:
-        if self.config.steps_per_epoch is not None:
-            return self.config.steps_per_epoch
+        if self.trainer.steps_per_epoch is not None:
+            return self.trainer.steps_per_epoch
         return self._loader_total(self.train_loader)
 
     @staticmethod
@@ -525,7 +491,7 @@ class SupervisedTrainer:
             return None
 
     def _log(self, message: str) -> None:
-        if self.config.progress_bar:
+        if self.trainer.progress_bar:
             tqdm.write(message)
             return
         print(message)
@@ -556,7 +522,7 @@ class RLTrainer(SupervisedTrainer):
         self,
         model: torch.nn.Module,
         train_loader: DataLoader,
-        config: TrainerConfig,
+        cfg: DictConfig,
         device: torch.device,
         val_loader: DataLoader | None = None,
         wandb_logger: WandbLogger | None = None,
@@ -564,16 +530,16 @@ class RLTrainer(SupervisedTrainer):
         super().__init__(
             model,
             train_loader,
-            config,
+            cfg,
             device,
             val_loader,
             wandb_logger=wandb_logger,
         )
-        self.exp_baseline = ExponentialBaseline(beta=config.exp_baseline_beta)
+        self.exp_baseline = ExponentialBaseline(beta=cfg.trainer.exp_baseline_beta)
         self.rollout_baseline = RolloutBaseline(
-            problem=config.problem,
+            problem=cfg.problem,
             device=device,
-            alpha=config.baseline_alpha,
+            alpha=cfg.trainer.baseline_alpha,
         )
 
     def train_epoch(self, epoch: int) -> float:
@@ -583,7 +549,7 @@ class RLTrainer(SupervisedTrainer):
         steps = 0
         with self._progress(
             self._epoch_batches(self.train_loader),
-            desc=f"train {epoch + 1}/{self.config.n_epochs}",
+            desc=f"train {epoch + 1}/{self.trainer.epochs}",
             total=self._train_total(),
             unit="batch",
             leave=False,
@@ -591,11 +557,11 @@ class RLTrainer(SupervisedTrainer):
             for step, batch in enumerate(batches, start=1):
                 batch = move_batch_to_device(batch, self.device)
                 self.optimizer.zero_grad(set_to_none=True)
-                cost, log_likelihood = self.model(batch, problem=self.config.problem)
+                cost, log_likelihood = self.model(batch, problem=self.cfg.problem)
                 baseline = self._baseline_value(cost, batch, epoch)
                 loss = ((cost - baseline).detach() * log_likelihood).mean()
                 loss.backward()
-                clip_grad_norm_(self.model.parameters(), self.config.max_grad_norm)
+                clip_grad_norm_(self.model.parameters(), self.trainer.max_grad_norm)
                 self.optimizer.step()
 
                 cost_value = float(cost.detach().mean().item())
@@ -613,7 +579,7 @@ class RLTrainer(SupervisedTrainer):
                     lr=f"{self._current_learning_rate():.2e}",
                     refresh=False,
                 )
-                if step % self.config.log_every == 0:
+                if step % self.trainer.log_every == 0:
                     self._log(
                         f"epoch={epoch + 1} step={step} "
                         f"cost={cost_avg:.6f} loss={loss_value:.6f}"
@@ -633,19 +599,19 @@ class RLTrainer(SupervisedTrainer):
         return total_cost / max(steps, 1)
 
     def fit(self) -> None:
-        os.makedirs(self.config.output_dir, exist_ok=True)
+        os.makedirs(self.output_dir, exist_ok=True)
         with self._progress(
-            range(self.config.n_epochs),
+            range(self.trainer.epochs),
             desc="epochs",
-            total=self.config.n_epochs,
+            total=self.trainer.epochs,
             unit="epoch",
             leave=True,
         ) as epochs:
             for epoch in epochs:
-                if self.config.learning_rate_decay != 1.0:
+                if self.trainer.learning_rate_decay != 1.0:
                     self._set_learning_rate(
-                        self.config.learning_rate
-                        * (self.config.learning_rate_decay**epoch)
+                        self.trainer.learning_rate
+                        * (self.trainer.learning_rate_decay**epoch)
                     )
                 train_cost = self.train_epoch(epoch)
                 message = f"epoch={epoch + 1} train_cost={train_cost:.6f}"
@@ -663,12 +629,12 @@ class RLTrainer(SupervisedTrainer):
                     message += f" val_greedy_cost={val_cost:.6f}"
                     postfix["val_greedy_cost"] = f"{val_cost:.6f}"
                     metrics["val/greedy_cost"] = val_cost
-                    if self.config.baseline == "rollout":
+                    if self.trainer.baseline == "rollout":
                         updated = self.rollout_baseline.maybe_update(
                             self.model,
                             self._validation_batches(desc="rollout baseline"),
                             epoch,
-                            self.config.baseline_warmup_epochs,
+                            self.trainer.baseline_warmup_epochs,
                         )
                         message += f" rollout_updated={updated}"
                         postfix["rollout_updated"] = str(updated)
@@ -680,7 +646,7 @@ class RLTrainer(SupervisedTrainer):
                     val_cost if self.val_loader is not None else train_cost
                 )
                 self._save_last_and_best(epoch + 1, checkpoint_score)
-                if (epoch + 1) % self.config.checkpoint_every == 0:
+                if (epoch + 1) % self.trainer.checkpoint_every == 0:
                     self.save_checkpoint(epoch + 1)
                     self._prune_epoch_checkpoints()
 
@@ -693,7 +659,7 @@ class RLTrainer(SupervisedTrainer):
         total = 0.0
         count = 0
         for batch in self._validation_batches(desc="val greedy"):
-            cost, _ = self.model(batch, problem=self.config.problem)
+            cost, _ = self.model(batch, problem=self.cfg.problem)
             batch_size = self._batch_size(batch)
             total += float(cost.sum().item())
             count += batch_size
@@ -706,11 +672,11 @@ class RLTrainer(SupervisedTrainer):
         batch: dict[str, torch.Tensor],
         epoch: int,
     ) -> torch.Tensor:
-        if self.config.baseline == "exponential":
+        if self.trainer.baseline == "exponential":
             return self.exp_baseline.eval(cost)
-        if self.config.baseline != "rollout":
-            raise ValueError(f"Unsupported baseline: {self.config.baseline}")
-        if epoch < self.config.baseline_warmup_epochs:
+        if self.trainer.baseline != "rollout":
+            raise ValueError(f"Unsupported baseline: {self.trainer.baseline}")
+        if epoch < self.trainer.baseline_warmup_epochs:
             return self.exp_baseline.eval(cost)
         if self.rollout_baseline.baseline_model is None:
             self.rollout_baseline.init_from(self.model)

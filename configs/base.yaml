@@ -10,7 +10,7 @@ mode: rl
 paths:
   train: ???
   val: null
-  output_dir: null
+  output_dir: outputs
 
 wandb:
   enabled: false

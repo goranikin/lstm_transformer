@@ -3,8 +3,10 @@ from typing import Literal
 
 import torch
 import torch.nn.functional as F
-from configs.am_config import AMModelConfig
+from omegaconf import DictConfig
 from torch import nn
+
+from configs.validation import default_am_config, validate_am_config
 
 from src.models.attention_model.attention_layer import (
     GraphAttentionEncoder,
@@ -21,7 +23,7 @@ class AttentionModel(nn.Module):
 
     def __init__(
         self,
-        config: AMModelConfig | None = None,
+        config: DictConfig | None = None,
         default_problem: ProblemType | None = None,
         tsp_input_size: int = 2,
         mis_input_size: int = 1,
@@ -32,7 +34,8 @@ class AttentionModel(nn.Module):
         target_set_key: str = "target_set",
     ) -> None:
         super().__init__()
-        self.config = config or AMModelConfig()
+        self.config = config or default_am_config()
+        validate_am_config(self.config)
         if tsp_input_size < 1:
             raise ValueError("tsp_input_size must be at least 1")
         if mis_input_size < 1:

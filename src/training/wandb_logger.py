@@ -2,26 +2,6 @@ from collections.abc import Mapping
 from typing import Any, Literal
 
 import torch
-from pydantic import BaseModel, ConfigDict, Field
-
-
-class WandbConfig(BaseModel):
-    model_config = ConfigDict(validate_assignment=True)
-
-    enabled: bool = False
-    project: str = "lstm_vs_transformer"
-    entity: str | None = None
-    name: str | None = None
-    group: str | None = None
-    tags: list[str] = Field(default_factory=list)
-    mode: Literal["online", "offline", "disabled"] = "online"
-    dir: str | None = None
-    notes: str | None = None
-    job_type: str | None = None
-    watch_model: bool = False
-    watch_log: Literal["gradients", "parameters", "all"] = "gradients"
-    watch_log_freq: int = Field(default=1000, gt=0)
-    log_checkpoints: bool = False
 
 
 class WandbLogger:
@@ -35,13 +15,13 @@ class WandbLogger:
     @classmethod
     def from_config(
         cls,
-        config: WandbConfig,
+        config: Mapping[str, Any],
         run_config: Mapping[str, Any],
         default_name: str,
         default_group: str,
         default_job_type: str,
     ) -> "WandbLogger":
-        if not config.enabled:
+        if not config.get("enabled", False):
             return cls.disabled()
 
         try:
@@ -53,20 +33,20 @@ class WandbLogger:
             ) from exc
 
         init_kwargs: dict[str, Any] = {
-            "project": config.project,
-            "name": config.name or default_name,
-            "group": config.group or default_group,
-            "job_type": config.job_type or default_job_type,
-            "tags": config.tags,
-            "mode": config.mode,
+            "project": config.get("project", "lstm_vs_transformer"),
+            "name": config.get("name") or default_name,
+            "group": config.get("group") or default_group,
+            "job_type": config.get("job_type") or default_job_type,
+            "tags": list(config.get("tags") or []),
+            "mode": config.get("mode", "online"),
             "config": dict(run_config),
         }
-        if config.entity is not None:
-            init_kwargs["entity"] = config.entity
-        if config.dir is not None:
-            init_kwargs["dir"] = config.dir
-        if config.notes is not None:
-            init_kwargs["notes"] = config.notes
+        if config.get("entity") is not None:
+            init_kwargs["entity"] = config["entity"]
+        if config.get("dir") is not None:
+            init_kwargs["dir"] = config["dir"]
+        if config.get("notes") is not None:
+            init_kwargs["notes"] = config["notes"]
 
         wandb.init(**init_kwargs)
         return cls(wandb)

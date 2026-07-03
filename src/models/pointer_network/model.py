@@ -2,9 +2,10 @@ from typing import Literal
 
 import torch
 import torch.nn.functional as F
+from omegaconf import DictConfig
 from torch import nn
 
-from configs.pn_config import PNModelConfig
+from configs.validation import default_pn_config
 from src.models.utils import init_uniform_
 from src.models.pointer_network.decoder import PointerDecoder
 from src.models.pointer_network.encoder import PointerEncoder
@@ -23,7 +24,7 @@ class PointerNetwork(nn.Module):
         hidden_size: int | None = None,
         num_layers: int | None = None,
         dropout: float | None = None,
-        config: PNModelConfig | None = None,
+        config: DictConfig | None = None,
         default_problem: ProblemType | None = None,
         loc_key: str = "loc",
         adjacency_key: str = "adjacency",
@@ -31,7 +32,7 @@ class PointerNetwork(nn.Module):
         target_set_key: str = "target_set",
     ) -> None:
         super().__init__()
-        self.config = config or PNModelConfig()
+        self.config = config or default_pn_config()
         if input_size < 1:
             raise ValueError("input_size must be at least 1")
         self.input_size = input_size

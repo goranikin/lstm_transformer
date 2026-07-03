@@ -1,33 +1,32 @@
 import random
 from collections.abc import Callable, Mapping
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import numpy as np
 import torch
+from omegaconf import DictConfig, OmegaConf
 from torch.utils.data import DataLoader
 
-from configs.am_config import AMModelConfig
-from configs.pn_config import PNModelConfig
-from src.data_generating.CVRP.dataset import CVRPDataset, collate_cvrp
-from src.data_generating.KNAPSACK.dataset import KnapsackDataset, collate_knapsack
-from src.data_generating.MAX_CLIQUE.dataset import (
+from configs.validation import default_am_config
+from src.generate_data.CVRP.dataset import CVRPDataset, collate_cvrp
+from src.generate_data.KNAPSACK.dataset import KnapsackDataset, collate_knapsack
+from src.generate_data.MAX_CLIQUE.dataset import (
     MaxCliqueDataset,
     collate_max_clique,
 )
-from src.data_generating.MIS.dataset import MISDataset, collate_mis
-from src.data_generating.ORIENTEERING.dataset import (
+from src.generate_data.MIS.dataset import MISDataset, collate_mis
+from src.generate_data.ORIENTEERING.dataset import (
     OrienteeringDataset,
     collate_orienteering,
 )
-from src.data_generating.TSP.dataset import TSPDataset, collate_tsp
-from src.data_generating.VERTEX_COVER.dataset import (
+from src.generate_data.TSP.dataset import TSPDataset, collate_tsp
+from src.generate_data.VERTEX_COVER.dataset import (
     VertexCoverDataset,
     collate_vertex_cover,
 )
-from src.models.modified_attention_model.model import ModifiedAttentionModel
+from src.models.attention_model.model import AttentionModel
 from src.models.modular.model import DecoderKind, EncoderKind, ModularNCOModel
 from src.models.pointer_network.model import PointerNetwork
-from src.models.transformer.model import AttentionModel
 
 ModelName = Literal[
     "am",
@@ -156,9 +155,9 @@ def build_loader(
 def build_model(
     model_name: ModelName,
     problem: ProblemName,
-    model_options: Mapping[str, Any] | None = None,
+    model_options: Mapping[str, Any] | DictConfig | None = None,
 ) -> torch.nn.Module:
-    options = dict(model_options or {})
+    options = model_options if model_options is not None else {}
     interface = dict(options.get("interface") or {})
     if model_name == "modular_pn" or (
         model_name == "pn" and problem not in ("tsp", "mis")
@@ -208,9 +207,9 @@ def build_model(
         )
     if model_name in ("am", "modified_am"):
         legacy_problem = _as_legacy_problem(problem)
-        model_cls = AttentionModel if model_name == "am" else ModifiedAttentionModel
+        model_cls = AttentionModel
         return model_cls(
-            config=AMModelConfig(**dict(options.get("am") or {})),
+            config=options["am"],
             default_problem=legacy_problem,
             tsp_input_size=int(options.get("tsp_input_size", 2)),
             mis_input_size=int(options.get("mis_input_size", 1)),
@@ -229,7 +228,7 @@ def build_model(
         )
         return PointerNetwork(
             input_size=pn_input_size,
-            config=PNModelConfig(**dict(options.get("pn") or {})),
+            config=options["pn"],
             default_problem=legacy_problem,
             loc_key=str(interface.get("loc_key", "loc")),
             adjacency_key=str(interface.get("adjacency_key", "adjacency")),
@@ -256,13 +255,13 @@ def _build_modular_model(
     encoder_kind: EncoderKind,
     decoder_kind: DecoderKind,
 ) -> ModularNCOModel:
-    am_options = dict(options.get("am") or {})
+    am_cfg = options.get("am") or default_am_config()
     if encoder_kind == "lstm":
-        pn_options = dict(options.get("pn") or {})
-        if "hidden_size" in pn_options and "d_h" not in am_options:
-            am_options["d_h"] = int(pn_options["hidden_size"])
+        pn_options = options.get("pn")
+        if pn_options is not None and "hidden_size" in pn_options and "d_h" not in am_cfg:
+            am_cfg = OmegaConf.merge(am_cfg, {"d_h": int(pn_options["hidden_size"])})
     return ModularNCOModel(
-        config=AMModelConfig(**am_options),
+        config=cast(DictConfig, am_cfg),
         encoder_kind=encoder_kind,
         decoder_kind=decoder_kind,
         default_problem=problem,
