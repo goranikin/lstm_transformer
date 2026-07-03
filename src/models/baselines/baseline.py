@@ -1,10 +1,11 @@
 import copy
-from collections.abc import Callable, Iterable
-from typing import cast
+from collections.abc import Iterable
 
 import torch
 from pydantic import BaseModel, ConfigDict, Field
 from scipy.stats import ttest_rel
+
+from src.models.utils import set_decode_type_if_supported
 
 
 class ExponentialBaseline:
@@ -34,7 +35,7 @@ class RolloutBaseline(BaseModel):
     def init_from(self, model: torch.nn.Module) -> None:
         self.baseline_model = copy.deepcopy(model).to(self.device)
         self.baseline_model.eval()
-        _set_decode_type_if_supported(self.baseline_model, "greedy")
+        set_decode_type_if_supported(self.baseline_model, "greedy")
 
     @torch.no_grad()
     def greedy_costs(
@@ -45,9 +46,9 @@ class RolloutBaseline(BaseModel):
         was_training = model.training
         previous_decode_type = getattr(model, "decode_type", None)
         model.eval()
-        _set_decode_type_if_supported(model, "greedy")
+        set_decode_type_if_supported(model, "greedy")
         cost, _ = model(batch, problem=self.problem)
-        _set_decode_type_if_supported(
+        set_decode_type_if_supported(
             model,
             str(previous_decode_type or "sampling"),
         )
@@ -98,9 +99,3 @@ class RolloutBaseline(BaseModel):
             self.init_from(model)
             return True
         return False
-
-
-def _set_decode_type_if_supported(model: torch.nn.Module, decode_type: str) -> None:
-    set_decode_type = getattr(model, "set_decode_type", None)
-    if callable(set_decode_type):
-        cast(Callable[[str], None], set_decode_type)(decode_type)
