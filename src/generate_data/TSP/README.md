@@ -1,14 +1,14 @@
 # TSP data generation
 
 TSP instances are solved with [Concorde](https://www.math.uwaterloo.ca/tsp/concorde/), an
-exact TSP solver. The project depends on
+exact TSP solver. The `concorde` optional dependency installs
 [PyConcorde](https://github.com/jvkersch/pyconcorde), which builds Concorde and
-QSopt during `uv sync` and exposes Concorde through Python.
+QSopt and exposes Concorde through Python.
 
 ## Quick check
 
 ```bash
-uv sync
+uv sync --extra concorde
 uv run python -c "from concorde.tsp import TSPSolver; print(TSPSolver)"
 ```
 

@@ -64,6 +64,20 @@ def is_clique(adjacency: np.ndarray, nodes: list[int]) -> bool:
     return True
 
 
+def is_independent_set(adjacency: np.ndarray, nodes: list[int]) -> bool:
+    adjacency = validate_adjacency(adjacency)
+    if len(nodes) != len(set(nodes)):
+        return False
+    for node in nodes:
+        if not 0 <= node < adjacency.shape[0]:
+            return False
+    for i, u in enumerate(nodes):
+        for v in nodes[i + 1 :]:
+            if bool(adjacency[u, v]):
+                return False
+    return True
+
+
 def is_vertex_cover(adjacency: np.ndarray, nodes: list[int]) -> bool:
     adjacency = validate_adjacency(adjacency)
     cover = set(nodes)

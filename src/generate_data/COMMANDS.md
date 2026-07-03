@@ -21,15 +21,25 @@ created automatically.
 | Problem | Solver used | Time limits |
 | ------- | ----------- | ----------- |
 | TSP | `concorde` | |
-| MIS | `kamis` | |
+| MIS | `Gurobi` | |
 | CVRP | `Gurobi` | 30s |
 | Knapsack | `dynamic_programming` | |
 | Max Clique | `Gurobi` | |
 | Vertex Cover | `Gurobi` | |
 | Orienteering | `Gurobi` | 30s |
 
-TSP and MIS require their external solvers to be installed and on `PATH`. See
-[TSP/README.md](TSP/README.md) and [MIS/README.md](MIS/README.md).
+TSP requires its external solver to be installed. See
+[TSP/README.md](TSP/README.md) for Concorde setup details. Gurobi-backed
+generators require `uv sync --extra gurobi` and a valid Gurobi license.
+
+Install Python-packaged solvers with:
+
+```bash
+uv sync --extra solvers
+```
+
+For Concorde only, use `uv sync --extra concorde`; for Gurobi only, use
+`uv sync --extra gurobi`.
 
 ## Output paths
 
@@ -89,7 +99,7 @@ uv run python -m src.generate_data.CVRP.generate \
 
 ## MIS
 
-Solver: `kamis`.
+Solver: `Gurobi`.
 
 ```bash
 uv run python -m src.generate_data.MIS.generate \

@@ -4,7 +4,7 @@ import torch
 from torch.utils.data import Dataset
 
 from src.generate_data.common import load_jsonl
-from src.generate_data.MIS.algorithms import edges_to_adjacency
+from src.generate_data.graph_utils import edges_to_adjacency
 
 
 class MISDataset(Dataset):
