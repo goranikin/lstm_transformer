@@ -14,12 +14,12 @@ Dry-run a small routing matrix:
 
 ```bash
 uv run python -m src.experiments.matrix \
-  --stage routing \
-  --seeds 1234 \
-  --modes supervised \
-  --epochs 1 \
-  --steps-per-epoch 1 \
-  --batch-size 8
+  stage=routing \
+  'seeds=[1234]' \
+  'modes=[supervised]' \
+  trainer.epochs=1 \
+  trainer.steps_per_epoch=1 \
+  data.batch_size=8
 ```
 
 ## Parameter Matching
@@ -36,32 +36,32 @@ By default, the target is the largest parameter count among the base
 
 ```bash
 uv run python -m src.experiments.parameter_comparison \
-  --format json \
-  --output outputs/src/parameter_budget.json
+  format=json \
+  output=outputs/src/parameter_budget.json
 ```
 
 Use an explicit target size:
 
 ```bash
 uv run python -m src.experiments.parameter_comparison \
-  --target-params 500000 \
-  --min-d-model 32 \
-  --max-d-model 512 \
-  --d-model-step 8
+  target_params=500000 \
+  search.min_d_model=32 \
+  search.max_d_model=512 \
+  search.d_model_step=8
 ```
 
 Compare only one problem family:
 
 ```bash
 uv run python -m src.experiments.parameter_comparison \
-  --problems tsp,cvrp,orienteering
+  'problems=[tsp,cvrp,orienteering]'
 ```
 
 Include `graph_attention`, which currently shares the attention implementation:
 
 ```bash
 uv run python -m src.experiments.parameter_comparison \
-  --include-graph-attention
+  include_graph_attention=true
 ```
 
 ## Single Experiment
@@ -70,37 +70,58 @@ Run one supervised TSP experiment:
 
 ```bash
 uv run python -m src.experiments.run \
-  --problem tsp \
-  --encoder attention \
-  --decoder attention_pointer \
-  --mode supervised \
-  --train-path data/tsp/tsp50_train_64000_seed1234.jsonl \
-  --val-path data/tsp/tsp50_val_10000_seed4321.jsonl \
-  --test-path data/tsp/tsp50_test_10000_seed9999.jsonl \
-  --target-algorithm concorde \
-  --seed 1234 \
-  --epochs 100 \
-  --batch-size 512 \
-  --output-dir outputs/src/single/tsp_attention_attention_pointer_sl
+  problem=tsp \
+  encoder=attention \
+  decoder=attention_pointer \
+  mode=supervised \
+  data.train_path=data/tsp/tsp50_train_64000_seed1234.jsonl \
+  data.val_path=data/tsp/tsp50_val_10000_seed4321.jsonl \
+  data.test_path=data/tsp/tsp50_test_10000_seed9999.jsonl \
+  data.target_algorithm=concorde \
+  seed=1234 \
+  trainer.epochs=100 \
+  data.batch_size=512 \
+  paths.output_dir=outputs/src/single/tsp_attention_attention_pointer_sl
 ```
 
 Run one RL knapsack experiment:
 
 ```bash
 uv run python -m src.experiments.run \
-  --problem knapsack \
-  --encoder attention \
-  --decoder sigmoid_subset \
-  --mode rl \
-  --train-path data/knapsack/knapsack100_train_64000_seed1234.jsonl \
-  --val-path data/knapsack/knapsack100_val_10000_seed4321.jsonl \
-  --test-path data/knapsack/knapsack100_test_10000_seed9999.jsonl \
-  --target-algorithm dynamic_programming \
-  --seed 1234 \
-  --epochs 100 \
-  --batch-size 512 \
-  --baseline exponential \
-  --output-dir outputs/src/single/knapsack_attention_sigmoid_rl
+  problem=knapsack \
+  encoder=attention \
+  decoder=sigmoid_subset \
+  mode=rl \
+  data.train_path=data/knapsack/knapsack100_train_64000_seed1234.jsonl \
+  data.val_path=data/knapsack/knapsack100_val_10000_seed4321.jsonl \
+  data.test_path=data/knapsack/knapsack100_test_10000_seed9999.jsonl \
+  data.target_algorithm=dynamic_programming \
+  seed=1234 \
+  trainer.epochs=100 \
+  data.batch_size=512 \
+  trainer.baseline=exponential \
+  paths.output_dir=outputs/src/single/knapsack_attention_sigmoid_rl
+```
+
+The run entry point uses Hydra with `configs/train.yaml`. Parameter matching is
+enabled by default:
+
+```bash
+parameter_budget.enabled=true
+parameter_budget.path=outputs/src/parameter_budget.json
+```
+
+Disable matching and provide explicit dimensions:
+
+```bash
+uv run python -m src.experiments.run \
+  problem=tsp \
+  encoder=attention \
+  decoder=attention_pointer \
+  mode=supervised \
+  parameter_budget.enabled=false \
+  model.d_model=128 \
+  model.d_ff=512
 ```
 
 ## Full Matrix
@@ -108,15 +129,15 @@ uv run python -m src.experiments.run \
 Dry-run the full staged matrix:
 
 ```bash
-uv run python -m src.experiments.matrix --stage all
+uv run python -m src.experiments.matrix stage=all
 ```
 
 Execute the full matrix:
 
 ```bash
 uv run python -m src.experiments.matrix \
-  --stage all \
-  --execute
+  stage=all \
+  execute=true
 ```
 
 This expands to:
@@ -131,33 +152,33 @@ Routing problems only:
 
 ```bash
 uv run python -m src.experiments.matrix \
-  --stage routing \
-  --execute
+  stage=routing \
+  execute=true
 ```
 
 Subset problems only:
 
 ```bash
 uv run python -m src.experiments.matrix \
-  --stage subset \
-  --execute
+  stage=subset \
+  execute=true
 ```
 
 Orienteering only:
 
 ```bash
 uv run python -m src.experiments.matrix \
-  --stage hybrid \
-  --execute
+  stage=hybrid \
+  execute=true
 ```
 
 Skip weaker sigmoid routing baselines:
 
 ```bash
 uv run python -m src.experiments.matrix \
-  --stage all \
-  --skip-sigmoid-routing \
-  --execute
+  stage=all \
+  skip_sigmoid_routing=true \
+  execute=true
 ```
 
 ## Small Pilot
@@ -166,28 +187,28 @@ One seed, one mode, short training:
 
 ```bash
 uv run python -m src.experiments.matrix \
-  --stage all \
-  --seeds 1234 \
-  --modes supervised \
-  --epochs 5 \
-  --steps-per-epoch 100 \
-  --batch-size 128 \
-  --output-root outputs/src/pilot \
-  --execute
+  stage=all \
+  'seeds=[1234]' \
+  'modes=[supervised]' \
+  trainer.epochs=5 \
+  trainer.steps_per_epoch=100 \
+  data.batch_size=128 \
+  paths.output_root=outputs/src/pilot \
+  execute=true
 ```
 
 Both modes for a subset of problems:
 
 ```bash
 uv run python -m src.experiments.matrix \
-  --problems tsp,knapsack,mis \
-  --seeds 1234 \
-  --modes supervised,rl \
-  --epochs 10 \
-  --steps-per-epoch 100 \
-  --batch-size 128 \
-  --output-root outputs/src/pilot_mixed \
-  --execute
+  'problems=[tsp,knapsack,mis]' \
+  'seeds=[1234]' \
+  'modes=[supervised,rl]' \
+  trainer.epochs=10 \
+  trainer.steps_per_epoch=100 \
+  data.batch_size=128 \
+  paths.output_root=outputs/src/pilot_mixed \
+  execute=true
 ```
 
 ## Custom Architecture Slices
@@ -196,25 +217,25 @@ Attention encoder with all decoders:
 
 ```bash
 uv run python -m src.experiments.matrix \
-  --encoders attention \
-  --decoders attention_pointer,lstm_pointer,gru_pointer,sigmoid_subset \
-  --stage all
+  'encoders=[attention]' \
+  'decoders=[attention_pointer,lstm_pointer,gru_pointer,sigmoid_subset]' \
+  stage=all
 ```
 
 Pointer-Network-style recurrent encoder only:
 
 ```bash
 uv run python -m src.experiments.matrix \
-  --encoders lstm \
-  --stage all
+  'encoders=[lstm]' \
+  stage=all
 ```
 
 Sigmoid decoder only:
 
 ```bash
 uv run python -m src.experiments.matrix \
-  --decoders sigmoid_subset \
-  --stage all
+  'decoders=[sigmoid_subset]' \
+  stage=all
 ```
 
 ## Expected Data Paths
@@ -257,8 +278,8 @@ Override data root when needed:
 
 ```bash
 uv run python -m src.experiments.matrix \
-  --data-root /path/to/data \
-  --output-root outputs/src/custom_data
+  data.root=/path/to/data \
+  paths.output_root=outputs/src/custom_data
 ```
 
 ## Outputs
@@ -266,9 +287,9 @@ uv run python -m src.experiments.matrix \
 Each run writes:
 
 ```text
-result.json       Final arguments, history, training time, optional test metrics
+result.json       Final config, history, training time, optional test metrics
 history.json      Incremental validation curve and training history
-last.pt           Last checkpoint, unless --no-checkpoints is set
+last.pt           Last checkpoint, unless trainer.save_checkpoints=false
 best.pt           Best validation checkpoint, when validation is configured
 ```
 
@@ -276,16 +297,17 @@ For smoke/debug runs, disable checkpoints and progress bars:
 
 ```bash
 uv run python -m src.experiments.run \
-  --problem knapsack \
-  --encoder lstm \
-  --decoder sigmoid_subset \
-  --mode supervised \
-  --train-path data/knapsack/knapsack50_smoke_seed1234.jsonl \
-  --target-algorithm dynamic_programming \
-  --epochs 1 \
-  --steps-per-epoch 1 \
-  --batch-size 4 \
-  --output-dir /tmp/src_knapsack_debug \
-  --no-progress \
-  --no-checkpoints
+  problem=knapsack \
+  encoder=lstm \
+  decoder=sigmoid_subset \
+  mode=supervised \
+  data.use_default_paths=false \
+  data.train_path=data/knapsack/knapsack50_smoke_seed1234.jsonl \
+  data.target_algorithm=dynamic_programming \
+  trainer.epochs=1 \
+  trainer.steps_per_epoch=1 \
+  data.batch_size=4 \
+  paths.output_dir=/tmp/src_knapsack_debug \
+  trainer.progress_bar=false \
+  trainer.save_checkpoints=false
 ```

@@ -1,116 +1,132 @@
-import argparse
+from __future__ import annotations
+
 import json
 from dataclasses import asdict
 from pathlib import Path
-from typing import Sequence
+from typing import Any, cast
 
-import torch
+import hydra
+from omegaconf import DictConfig, OmegaConf
 
 from src.constants import (
     DECODER_KINDS,
     DEFAULT_TARGET_ALGORITHM,
     ENCODER_KINDS,
+    MATRIX_ENCODERS,
+    PROBLEM_FILE_PREFIX,
     PROBLEM_NAMES,
+    PROBLEM_PATH_DIR,
+    DecoderKind,
+    EncoderKind,
+    ProblemName,
 )
 from src.data import build_dataloader
+from src.experiments.parameter_comparison import (
+    INPUT_DIM_BY_PROBLEM,
+    ParameterComparisonSettings,
+    base_parameter_count,
+    find_closest_budget,
+    resolve_target,
+)
 from src.model import NCOModel
-from src.problems import make_problem
 from src.training import Trainer, TrainingConfig
-from src.utils import move_to_device, resolve_device, set_seed
+from src.utils import resolve_device, set_seed
 
 
-def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run one src experiment.")
-    parser.add_argument("--problem", choices=PROBLEM_NAMES, required=True)
-    parser.add_argument("--encoder", choices=ENCODER_KINDS, required=True)
-    parser.add_argument("--decoder", choices=DECODER_KINDS, required=True)
-    parser.add_argument("--mode", choices=("supervised", "rl"), required=True)
-    parser.add_argument("--train-path", required=True)
-    parser.add_argument("--val-path")
-    parser.add_argument("--test-path")
-    parser.add_argument("--target-algorithm")
-    parser.add_argument("--seed", type=int, default=1234)
-    parser.add_argument("--epochs", type=int, default=1)
-    parser.add_argument("--steps-per-epoch", type=int)
-    parser.add_argument("--batch-size", type=int, default=128)
-    parser.add_argument("--eval-batch-size", type=int)
-    parser.add_argument("--num-workers", type=int, default=0)
-    parser.add_argument("--learning-rate", type=float, default=1e-4)
-    parser.add_argument("--d-model", type=int, default=128)
-    parser.add_argument("--num-layers", type=int, default=3)
-    parser.add_argument("--num-heads", type=int, default=8)
-    parser.add_argument("--d-ff", type=int, default=512)
-    parser.add_argument("--dropout", type=float, default=0.0)
-    parser.add_argument(
-        "--baseline", choices=("rollout", "exponential"), default="rollout"
+@hydra.main(version_base=None, config_path="../../configs", config_name="train")
+def main(cfg: DictConfig) -> None:
+    run_from_config(cfg)
+
+
+def run_from_config(cfg: DictConfig) -> dict[str, Any]:
+    cfg = OmegaConf.create(OmegaConf.to_container(cfg, resolve=True))  # type: ignore
+    validate_config(cfg)
+    set_seed(int(cfg.seed))
+    device = resolve_device(str(cfg.device))
+
+    problem = cast(ProblemName, str(cfg.problem))
+    encoder = cast(EncoderKind, str(cfg.encoder))
+    decoder = cast(DecoderKind, str(cfg.decoder))
+    target_algorithm = str(
+        cfg.data.target_algorithm or DEFAULT_TARGET_ALGORITHM[problem]
     )
-    parser.add_argument("--device", default="auto")
-    parser.add_argument("--output-dir", default="outputs/src/run")
-    parser.add_argument("--no-progress", action="store_true")
-    parser.add_argument("--no-checkpoints", action="store_true")
-    return parser.parse_args(argv)
+    train_path = resolve_data_path(cfg, split="train")
+    val_path = resolve_data_path(cfg, split="val")
+    test_path = resolve_data_path(cfg, split="test")
+    output_dir = resolve_output_dir(cfg)
+    matched_params = resolve_model_parameters(
+        cfg,
+        problem=problem,
+        encoder=encoder,
+        decoder=decoder,
+    )
 
-
-def main(argv: Sequence[str] | None = None) -> int:
-    args = parse_args(argv)
-    set_seed(args.seed)
-    device = resolve_device(args.device)
-    target_algorithm = args.target_algorithm or DEFAULT_TARGET_ALGORITHM[args.problem]
-    eval_batch_size = args.eval_batch_size or args.batch_size
     train_loader = build_dataloader(
-        args.train_path,
-        args.problem,
-        batch_size=args.batch_size,
+        train_path,
+        problem,
+        batch_size=int(cfg.data.batch_size),
         target_algorithm=target_algorithm,
-        shuffle=True,
-        num_workers=args.num_workers,
+        shuffle=bool(cfg.data.shuffle),
+        num_workers=int(cfg.data.num_workers),
     )
     val_loader = (
         build_dataloader(
-            args.val_path,
-            args.problem,
-            batch_size=eval_batch_size,
+            val_path,
+            problem,
+            batch_size=int(cfg.data.eval_batch_size),
             target_algorithm=target_algorithm,
             shuffle=False,
-            num_workers=args.num_workers,
+            num_workers=int(cfg.data.num_workers),
         )
-        if args.val_path
+        if val_path is not None
         else None
     )
     test_loader = (
         build_dataloader(
-            args.test_path,
-            args.problem,
-            batch_size=eval_batch_size,
+            test_path,
+            problem,
+            batch_size=int(cfg.data.eval_batch_size),
             target_algorithm=target_algorithm,
             shuffle=False,
-            num_workers=args.num_workers,
+            num_workers=int(cfg.data.num_workers),
         )
-        if args.test_path
+        if test_path is not None
         else None
     )
 
-    input_dim = infer_input_dim(train_loader, args.problem, device)
     model = NCOModel(
-        problem=args.problem,
-        encoder_kind=args.encoder,
-        decoder_kind=args.decoder,
-        input_dim=input_dim,
-        d_model=args.d_model,
-        num_layers=args.num_layers,
-        num_heads=args.num_heads,
-        d_ff=args.d_ff,
-        dropout=args.dropout,
+        problem=problem,
+        encoder_kind=encoder,
+        decoder_kind=decoder,
+        input_dim=INPUT_DIM_BY_PROBLEM[problem],
+        d_model=matched_params["d_model"],
+        num_layers=int(cfg.model.num_layers),
+        num_heads=int(cfg.model.num_heads),
+        d_ff=matched_params["d_ff"],
+        dropout=float(cfg.model.dropout),
+        tanh_clip=float(cfg.model.tanh_clip),
     )
     train_config = TrainingConfig(
-        mode=args.mode,
-        epochs=args.epochs,
-        steps_per_epoch=args.steps_per_epoch,
-        learning_rate=args.learning_rate,
-        baseline=args.baseline,
-        progress_bar=not args.no_progress,
-        output_dir=args.output_dir,
-        save_checkpoints=not args.no_checkpoints,
+        mode=str(cfg.mode),
+        epochs=int(cfg.trainer.epochs),
+        steps_per_epoch=none_or_int(cfg.trainer.steps_per_epoch),
+        learning_rate=float(cfg.trainer.learning_rate),
+        max_grad_norm=float(cfg.trainer.max_grad_norm),
+        baseline=str(cfg.trainer.baseline),
+        baseline_alpha=float(cfg.trainer.baseline_alpha),
+        baseline_warmup_epochs=int(cfg.trainer.baseline_warmup_epochs),
+        exp_baseline_beta=float(cfg.trainer.exp_baseline_beta),
+        log_every=int(cfg.trainer.log_every),
+        progress_bar=bool(cfg.trainer.progress_bar),
+        output_dir=output_dir,
+        save_checkpoints=bool(cfg.trainer.save_checkpoints),
+    )
+    print(
+        "run="
+        f"problem={problem} encoder={encoder} decoder={decoder} mode={cfg.mode} "
+        f"d_model={matched_params['d_model']} d_ff={matched_params['d_ff']} "
+        f"params={matched_params['matched_params']} "
+        f"target_params={matched_params['target_params']} device={device}"
     )
     trainer = Trainer(
         model=model,
@@ -120,27 +136,289 @@ def main(argv: Sequence[str] | None = None) -> int:
         device=device,
     )
     result = trainer.fit()
-    payload = {
-        "args": vars(args),
+    payload: dict[str, Any] = {
+        "config": OmegaConf.to_container(cfg, resolve=True),
+        "resolved": {
+            "train_path": train_path,
+            "val_path": val_path,
+            "test_path": test_path,
+            "target_algorithm": target_algorithm,
+            "output_dir": output_dir,
+            "model": matched_params,
+        },
         "training_config": asdict(train_config),
         "training_time_sec": result.training_time_sec,
         "history": result.history,
     }
     if test_loader is not None:
         payload["test"] = trainer.evaluate(test_loader).to_dict("test")
-    Path(args.output_dir).mkdir(parents=True, exist_ok=True)
-    with open(Path(args.output_dir) / "result.json", "w", encoding="utf-8") as handle:
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    with open(Path(output_dir) / "result.json", "w", encoding="utf-8") as handle:
         json.dump(payload, handle, indent=2, sort_keys=True)
     print(json.dumps(payload, indent=2, sort_keys=True))
-    return 0
+    return payload
 
 
-def infer_input_dim(loader, problem_name: str, device: torch.device) -> int:
-    batch = move_to_device(next(iter(loader)), device)
-    problem = make_problem(problem_name)
-    features, _, _ = problem.build_features(batch)
-    return int(features.size(-1))
+def validate_config(cfg: DictConfig) -> None:
+    if str(cfg.problem) not in PROBLEM_NAMES:
+        raise ValueError(f"Unsupported problem: {cfg.problem}")
+    if str(cfg.encoder) not in ENCODER_KINDS:
+        raise ValueError(f"Unsupported encoder: {cfg.encoder}")
+    if str(cfg.decoder) not in DECODER_KINDS:
+        raise ValueError(f"Unsupported decoder: {cfg.decoder}")
+    if str(cfg.mode) not in ("supervised", "rl"):
+        raise ValueError(f"Unsupported mode: {cfg.mode}")
+    has_d_model = cfg.model.d_model is not None
+    has_d_ff = cfg.model.d_ff is not None
+    if has_d_model != has_d_ff:
+        raise ValueError("model.d_model and model.d_ff must be provided together")
+    if not bool(cfg.parameter_budget.enabled) and not (has_d_model and has_d_ff):
+        raise ValueError(
+            "model.d_model and model.d_ff are required when "
+            "parameter_budget.enabled=false"
+        )
+    if has_d_model and int(cfg.model.d_model) % int(cfg.model.num_heads) != 0:
+        raise ValueError("model.d_model must be divisible by model.num_heads")
+
+
+def resolve_data_path(cfg: DictConfig, *, split: str) -> str | None:
+    configured = cfg.data.get(f"{split}_path")
+    if configured is not None:
+        return str(configured)
+    if not bool(cfg.data.use_default_paths):
+        if split == "train":
+            raise ValueError("data.train_path is required when use_default_paths=false")
+        return None
+    if split == "train":
+        instances = int(cfg.scale.train.instances)
+        seed = int(cfg.scale.train.seed)
+    elif split == "val":
+        instances = int(cfg.scale.validation.instances)
+        seed = int(cfg.scale.validation.seed)
+    elif split == "test":
+        instances = int(cfg.scale.test.instances)
+        seed = int(cfg.scale.test.seed)
+    else:
+        raise ValueError(f"Unsupported split: {split}")
+    problem = str(cfg.problem)
+    return (
+        f"{cfg.data.root}/{PROBLEM_PATH_DIR[problem]}/"
+        f"{PROBLEM_FILE_PREFIX[problem]}_{split}_{instances}_seed{seed}.jsonl"
+    )
+
+
+def resolve_output_dir(cfg: DictConfig) -> str:
+    if cfg.paths.output_dir:
+        return str(cfg.paths.output_dir)
+    return (
+        f"{cfg.paths.output_root}/seed_{cfg.seed}/{cfg.mode}/"
+        f"{cfg.problem}/{cfg.encoder}/{cfg.decoder}"
+    )
+
+
+def resolve_model_parameters(
+    cfg: DictConfig,
+    *,
+    problem: ProblemName,
+    encoder: EncoderKind,
+    decoder: DecoderKind,
+) -> dict[str, int | float | str | None]:
+    if not bool(cfg.parameter_budget.enabled):
+        d_model = int(cfg.model.d_model)
+        d_ff = int(cfg.model.d_ff)
+        matched_params = count_current_params(
+            cfg, problem, encoder, decoder, d_model, d_ff
+        )
+        return {
+            "source": "explicit",
+            "d_model": d_model,
+            "d_ff": d_ff,
+            "matched_params": matched_params,
+            "target_params": matched_params,
+            "delta": 0,
+            "delta_pct": 0.0,
+        }
+    if cfg.model.d_model is not None and cfg.model.d_ff is not None:
+        d_model = int(cfg.model.d_model)
+        d_ff = int(cfg.model.d_ff)
+        matched_params = count_current_params(
+            cfg, problem, encoder, decoder, d_model, d_ff
+        )
+        return {
+            "source": "explicit_over_budget",
+            "d_model": d_model,
+            "d_ff": d_ff,
+            "matched_params": matched_params,
+            "target_params": int(cfg.parameter_budget.target_params or matched_params),
+            "delta": matched_params
+            - int(cfg.parameter_budget.target_params or matched_params),
+            "delta_pct": 0.0,
+        }
+
+    row = find_budget_row(
+        path=Path(str(cfg.parameter_budget.path)),
+        problem=problem,
+        encoder=encoder,
+        decoder=decoder,
+        target_params=none_or_int(cfg.parameter_budget.target_params),
+        num_layers=int(cfg.model.num_layers),
+        num_heads=int(cfg.model.num_heads),
+    )
+    if row is None:
+        if bool(cfg.parameter_budget.strict):
+            raise FileNotFoundError(
+                "No parameter budget row for "
+                f"problem={problem}, encoder={encoder}, decoder={decoder} "
+                f"in {cfg.parameter_budget.path}"
+            )
+        row = compute_budget_row(cfg, problem=problem, encoder=encoder, decoder=decoder)
+    return {
+        "source": str(row.get("source", cfg.parameter_budget.path)),
+        "d_model": int(row["matched_d_model"]),
+        "d_ff": int(row["matched_d_ff"]),
+        "matched_params": int(row["matched_params"]),
+        "target_params": int(row["target_params"]),
+        "delta": int(row["delta"]),
+        "delta_pct": float(row["delta_pct"]),
+    }
+
+
+def find_budget_row(
+    *,
+    path: Path,
+    problem: ProblemName,
+    encoder: EncoderKind,
+    decoder: DecoderKind,
+    target_params: int | None,
+    num_layers: int,
+    num_heads: int,
+) -> dict[str, Any] | None:
+    if not path.is_file():
+        return None
+    with path.open(encoding="utf-8") as handle:
+        payload = json.load(handle)
+    settings = payload.get("settings", {})
+    if settings:
+        if int(settings.get("num_layers", num_layers)) != num_layers:
+            return None
+        if int(settings.get("num_heads", num_heads)) != num_heads:
+            return None
+    rows = payload.get("rows", [])
+    matches = [
+        row
+        for row in rows
+        if row.get("problem") == problem
+        and row.get("encoder") == encoder
+        and row.get("decoder") == decoder
+        and (target_params is None or int(row.get("target_params")) == target_params)
+    ]
+    if not matches:
+        return None
+    row = dict(matches[0])
+    row["source"] = str(path)
+    return row
+
+
+def compute_budget_row(
+    cfg: DictConfig,
+    *,
+    problem: ProblemName,
+    encoder: EncoderKind,
+    decoder: DecoderKind,
+) -> dict[str, Any]:
+    settings = parameter_budget_settings(cfg)
+    if cfg.parameter_budget.target_params is None:
+        base_counts = [
+            base_parameter_count(
+                problem=problem_name,
+                encoder=encoder_name,
+                decoder=decoder_name,
+                args=settings,
+            )
+            for problem_name in PROBLEM_NAMES
+            for encoder_name in MATRIX_ENCODERS
+            for decoder_name in DECODER_KINDS
+        ]
+        target_params = resolve_target(settings, base_counts)
+    else:
+        target_params = int(cfg.parameter_budget.target_params)
+    matched_d_model, matched_d_ff, matched_params = find_closest_budget(
+        problem=problem,
+        encoder=encoder,
+        decoder=decoder,
+        target_params=target_params,
+        args=settings,
+    )
+    delta = matched_params - target_params
+    return {
+        "source": "computed",
+        "problem": problem,
+        "encoder": encoder,
+        "decoder": decoder,
+        "target_params": target_params,
+        "matched_d_model": matched_d_model,
+        "matched_d_ff": matched_d_ff,
+        "matched_params": matched_params,
+        "delta": delta,
+        "delta_pct": 100.0 * delta / max(target_params, 1),
+    }
+
+
+def parameter_budget_settings(cfg: DictConfig) -> ParameterComparisonSettings:
+    return ParameterComparisonSettings(
+        problems=PROBLEM_NAMES,
+        encoders=MATRIX_ENCODERS,
+        include_graph_attention=False,
+        decoders=DECODER_KINDS,
+        d_model=int(cfg.parameter_budget.search.base_d_model),
+        d_ff=none_or_int(cfg.parameter_budget.search.d_ff),
+        d_ff_multiplier=int(cfg.parameter_budget.search.d_ff_multiplier),
+        num_layers=int(cfg.model.num_layers),
+        num_heads=int(cfg.model.num_heads),
+        dropout=float(cfg.model.dropout),
+        tanh_clip=float(cfg.model.tanh_clip),
+        target_params=none_or_int(cfg.parameter_budget.target_params),
+        match_target="max",
+        min_d_model=int(cfg.parameter_budget.search.min_d_model),
+        max_d_model=int(cfg.parameter_budget.search.max_d_model),
+        d_model_step=int(cfg.parameter_budget.search.d_model_step),
+        format="json",
+        output=None,
+    )
+
+
+def count_current_params(
+    cfg: DictConfig,
+    problem: ProblemName,
+    encoder: EncoderKind,
+    decoder: DecoderKind,
+    d_model: int,
+    d_ff: int,
+) -> int:
+    model = NCOModel(
+        problem=problem,
+        encoder_kind=encoder,
+        decoder_kind=decoder,
+        input_dim=INPUT_DIM_BY_PROBLEM[problem],
+        d_model=d_model,
+        num_layers=int(cfg.model.num_layers),
+        num_heads=int(cfg.model.num_heads),
+        d_ff=d_ff,
+        dropout=float(cfg.model.dropout),
+        tanh_clip=float(cfg.model.tanh_clip),
+    )
+    return sum(
+        parameter.numel() for parameter in model.parameters() if parameter.requires_grad
+    )
+
+
+def none_or_int(value: Any) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, str) and value.lower() in {"none", "null"}:
+        return None
+    return int(value)
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

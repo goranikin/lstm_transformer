@@ -1,0 +1,37 @@
+problems: null
+encoders:
+  - attention
+  - lstm
+include_graph_attention: false
+decoders:
+  - attention_pointer
+  - lstm_pointer
+  - gru_pointer
+  - sigmoid_subset
+
+model:
+  d_model: 128
+  num_layers: 3
+  num_heads: 8
+  d_ff: null
+  d_ff_multiplier: 4
+  dropout: 0.0
+  tanh_clip: 10.0
+
+target_params: null
+match_target: max
+
+search:
+  min_d_model: 16
+  max_d_model: 512
+  d_model_step: 8
+
+format: markdown
+output: null
+
+hydra:
+  job:
+    chdir: false
+  run:
+    dir: .
+  output_subdir: null

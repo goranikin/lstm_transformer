@@ -1,8 +1,8 @@
-# src_new
+# src
 
 `src` is a clean experiment stack for modular neural combinatorial
-optimization. It is separate from the old `src` package and is designed around
-one interface shared by all encoders, decoders, and problem wrappers.
+optimization. It is designed around one interface shared by all encoders,
+decoders, and problem wrappers.
 
 ## Design
 
@@ -43,8 +43,9 @@ src/
     metrics.py              Objective, gap, feasibility, time, and seed variance helpers
 
   experiments/
-    run.py                  Run one experiment
+    run.py                  Run one Hydra-configured experiment
     matrix.py               Expand/run architecture matrix experiments
+    parameter_comparison.py Compare/match trainable parameter counts
 ```
 
 ## Interfaces
@@ -105,6 +106,12 @@ The primary experiment matrix is:
 ```
 
 Use `src.experiments.matrix` to stage or dry-run those commands.
+
+Experiment entry points are Hydra-configured through `configs/train.yaml`,
+`configs/matrix.yaml`, and `configs/parameter_comparison.yaml`. By default,
+model widths are resolved from `outputs/src/parameter_budget.json`, so each
+problem/encoder/decoder run uses the closest matched `d_model` and `d_ff` for a
+shared target parameter count.
 
 ## Training Modes
 

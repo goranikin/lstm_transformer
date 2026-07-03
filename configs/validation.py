@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 from pathlib import Path
+from typing import Any
 
 from omegaconf import DictConfig, OmegaConf
 
-from src.constants import is_modular_model
+from src.constants import DECODER_KINDS, ENCODER_KINDS, PROBLEM_NAMES
 
 CONFIG_DIR = Path(__file__).resolve().parent
 SCALES = ("pilot", "medium")
@@ -14,40 +17,27 @@ def load_scale(name: str) -> DictConfig:
     return OmegaConf.load(CONFIG_DIR / "scale" / f"{name}.yaml")
 
 
-def load_base_trainer() -> DictConfig:
-    return OmegaConf.load(CONFIG_DIR / "base.yaml").trainer
-
-
-def default_am_config() -> DictConfig:
-    return OmegaConf.create(
-        {
-            "d_h": 128,
-            "n_layers": 3,
-            "n_heads": 8,
-            "d_ff": 512,
-            "tanh_clip": 10.0,
-            "normalization": "batch",
-        }
-    )
-
-
-def validate_am_config(config: DictConfig) -> None:
-    d_h = int(config.d_h)
-    n_heads = int(config.n_heads)
-    if d_h % n_heads != 0:
-        raise ValueError("model.am.d_h must be divisible by model.am.n_heads")
-
-
 def validate_config(cfg: DictConfig) -> None:
-    if is_modular_model(cfg.model.name):
-        validate_am_config(cfg.model.am)
+    if str(cfg.problem) not in PROBLEM_NAMES:
+        raise ValueError(f"Unsupported problem: {cfg.problem}")
+    if str(cfg.encoder) not in ENCODER_KINDS:
+        raise ValueError(f"Unsupported encoder: {cfg.encoder}")
+    if str(cfg.decoder) not in DECODER_KINDS:
+        raise ValueError(f"Unsupported decoder: {cfg.decoder}")
+    if str(cfg.mode) not in {"supervised", "rl"}:
+        raise ValueError(f"Unsupported mode: {cfg.mode}")
+    has_d_model = cfg.model.d_model is not None
+    has_d_ff = cfg.model.d_ff is not None
+    if has_d_model != has_d_ff:
+        raise ValueError("model.d_model and model.d_ff must be provided together")
+    if not bool(cfg.parameter_budget.enabled) and not (has_d_model and has_d_ff):
+        raise ValueError(
+            "model.d_model and model.d_ff are required when "
+            "parameter_budget.enabled=false"
+        )
+    if has_d_model and int(cfg.model.d_model) % int(cfg.model.num_heads) != 0:
+        raise ValueError("model.d_model must be divisible by model.num_heads")
 
-    if cfg.trainer.optimizer not in {"adam", "sgd"}:
-        raise ValueError(f"Unsupported optimizer: {cfg.trainer.optimizer}")
 
-    if cfg.mode == "rl" and cfg.trainer.baseline not in {"rollout", "exponential"}:
-        raise ValueError(f"Unsupported baseline: {cfg.trainer.baseline}")
-
-
-def config_to_dict(cfg: DictConfig) -> dict:
+def config_to_dict(cfg: DictConfig) -> dict[str, Any]:
     return OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True)

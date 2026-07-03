@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from src.constants import DecodeType, DecoderKind, EncoderKind, ProblemName
+from src.constants import DecoderKind, DecodeType, EncoderKind, ProblemName
 from src.core import ProblemDecodeState, SolutionOutput, SupervisedTarget
 from src.models.decoders import (
     AttentionPointerDecoder,

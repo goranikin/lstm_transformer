@@ -1,0 +1,61 @@
+stage: all
+problems: null
+encoders:
+  - attention
+  - lstm
+decoders:
+  - attention_pointer
+  - lstm_pointer
+  - gru_pointer
+  - sigmoid_subset
+modes:
+  - supervised
+  - rl
+seeds:
+  - 1234
+  - 4321
+  - 9999
+
+device: auto
+execute: false
+skip_sigmoid_routing: false
+
+data:
+  root: data
+  batch_size: 512
+  eval_batch_size: null
+  num_workers: 0
+  train:
+    instances: 64000
+    seed: 1234
+  validation:
+    instances: 10000
+    seed: 4321
+  test:
+    instances: 10000
+    seed: 9999
+
+paths:
+  output_root: outputs/src/matrix
+
+parameter_budget:
+  enabled: true
+  path: outputs/src/parameter_budget.json
+
+model:
+  d_model: 128
+  d_ff: 512
+  num_layers: 3
+  num_heads: 8
+
+trainer:
+  epochs: 100
+  steps_per_epoch: null
+  learning_rate: 1.0e-4
+
+hydra:
+  job:
+    chdir: false
+  run:
+    dir: .
+  output_subdir: null

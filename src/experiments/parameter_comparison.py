@@ -1,14 +1,21 @@
+from __future__ import annotations
+
 ###
-#  uv run python -m src.experiments.parameter_comparison --format json --output outputs/src/parameter_budget.json
+#  uv run python -m src.experiments.parameter_comparison \
+#    format=json output=outputs/src/parameter_budget.json
 ###
-import argparse
+
 import csv
 import json
 import statistics
 import sys
+from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Sequence, cast
+from typing import Any, cast
+
+import hydra
+from omegaconf import DictConfig, OmegaConf
 
 from src.constants import (
     DECODER_KINDS,
@@ -21,7 +28,6 @@ from src.constants import (
 )
 from src.model import NCOModel
 
-
 INPUT_DIM_BY_PROBLEM: dict[str, int] = {
     "tsp": 2,
     "cvrp": 3,
@@ -31,6 +37,28 @@ INPUT_DIM_BY_PROBLEM: dict[str, int] = {
     "max_clique": 1,
     "vertex_cover": 1,
 }
+
+
+@dataclass(frozen=True)
+class ParameterComparisonSettings:
+    problems: tuple[str, ...]
+    encoders: tuple[str, ...]
+    include_graph_attention: bool
+    decoders: tuple[str, ...]
+    d_model: int
+    num_layers: int
+    num_heads: int
+    d_ff: int | None
+    d_ff_multiplier: int
+    dropout: float
+    tanh_clip: float
+    target_params: int | None
+    match_target: str
+    min_d_model: int
+    max_d_model: int
+    d_model_step: int
+    format: str
+    output: str | None
 
 
 @dataclass(frozen=True)
@@ -51,100 +79,105 @@ class ParameterRow:
     command_args: str
 
 
-def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description=(
-            "Compare trainable parameter counts for src architecture "
-            "combinations and find d_model settings that match one parameter budget."
-        )
-    )
-    parser.add_argument("--problems", default=",".join(PROBLEM_NAMES))
-    parser.add_argument("--encoders", default=",".join(MATRIX_ENCODERS))
-    parser.add_argument(
-        "--include-graph-attention",
-        action="store_true",
-        help="Also include graph_attention, which currently uses attention code.",
-    )
-    parser.add_argument("--decoders", default=",".join(DECODER_KINDS))
-    parser.add_argument("--d-model", type=int, default=128)
-    parser.add_argument("--num-layers", type=int, default=3)
-    parser.add_argument("--num-heads", type=int, default=8)
-    parser.add_argument(
-        "--d-ff",
-        type=int,
-        help=(
-            "Fixed feed-forward width. By default d_ff is d_model multiplied by "
-            "--d-ff-multiplier."
-        ),
-    )
-    parser.add_argument("--d-ff-multiplier", type=int, default=4)
-    parser.add_argument("--dropout", type=float, default=0.0)
-    parser.add_argument("--tanh-clip", type=float, default=10.0)
-    parser.add_argument(
-        "--target-params",
-        type=int,
-        help="Explicit shared parameter target. Overrides --match-target.",
-    )
-    parser.add_argument(
-        "--match-target",
-        choices=("none", "max", "min", "median"),
-        default="max",
-        help=(
-            "Target derived from base model counts. Default max upsizes smaller "
-            "architectures to the largest base count."
-        ),
-    )
-    parser.add_argument("--min-d-model", type=int, default=16)
-    parser.add_argument("--max-d-model", type=int, default=512)
-    parser.add_argument("--d-model-step", type=int, default=8)
-    parser.add_argument(
-        "--format",
-        choices=("markdown", "csv", "json"),
-        default="markdown",
-    )
-    parser.add_argument("--output", help="Write output to a file instead of stdout.")
-    return parser.parse_args(argv)
+@hydra.main(
+    version_base=None,
+    config_path="../../configs",
+    config_name="parameter_comparison",
+)
+def main(cfg: DictConfig) -> None:
+    run_from_config(cfg)
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    args = parse_args(argv)
-    problems = validate_values(split_csv(args.problems), PROBLEM_NAMES, "problem")
-    encoders = validate_values(split_csv(args.encoders), ENCODER_KINDS, "encoder")
-    if args.include_graph_attention and "graph_attention" not in encoders:
+def run_from_config(cfg: DictConfig) -> str:
+    settings = settings_from_config(cfg)
+    text = build_parameter_comparison(settings)
+    if settings.output:
+        Path(settings.output).parent.mkdir(parents=True, exist_ok=True)
+        Path(settings.output).write_text(text, encoding="utf-8")
+    else:
+        print(text)
+    return text
+
+
+def settings_from_config(cfg: DictConfig) -> ParameterComparisonSettings:
+    cfg = OmegaConf.create(OmegaConf.to_container(cfg, resolve=True))  # type: ignore
+    problems = validate_values(
+        config_sequence(cfg.problems, PROBLEM_NAMES),
+        PROBLEM_NAMES,
+        "problem",
+    )
+    encoders = validate_values(
+        config_sequence(cfg.encoders, MATRIX_ENCODERS),
+        ENCODER_KINDS,
+        "encoder",
+    )
+    include_graph_attention = bool(cfg.include_graph_attention)
+    if include_graph_attention and "graph_attention" not in encoders:
         encoders = (*encoders, "graph_attention")
-    decoders = validate_values(split_csv(args.decoders), DECODER_KINDS, "decoder")
+    decoders = validate_values(
+        config_sequence(cfg.decoders, DECODER_KINDS),
+        DECODER_KINDS,
+        "decoder",
+    )
+    match_target = str(cfg.match_target)
+    if match_target not in {"none", "max", "min", "median"}:
+        raise ValueError(f"Unsupported match_target: {match_target}")
+    output_format = str(cfg.format)
+    if output_format not in {"markdown", "csv", "json"}:
+        raise ValueError(f"Unsupported format: {output_format}")
+    min_d_model = int(cfg.search.min_d_model)
+    max_d_model = int(cfg.search.max_d_model)
+    d_model_step = int(cfg.search.d_model_step)
+    if min_d_model <= 0 or max_d_model < min_d_model or d_model_step <= 0:
+        raise ValueError("search d_model bounds must be positive and ordered")
+    return ParameterComparisonSettings(
+        problems=problems,
+        encoders=encoders,
+        include_graph_attention=include_graph_attention,
+        decoders=decoders,
+        d_model=int(cfg.model.d_model),
+        num_layers=int(cfg.model.num_layers),
+        num_heads=int(cfg.model.num_heads),
+        d_ff=none_or_int(cfg.model.d_ff),
+        d_ff_multiplier=int(cfg.model.d_ff_multiplier),
+        dropout=float(cfg.model.dropout),
+        tanh_clip=float(cfg.model.tanh_clip),
+        target_params=none_or_int(cfg.target_params),
+        match_target=match_target,
+        min_d_model=min_d_model,
+        max_d_model=max_d_model,
+        d_model_step=d_model_step,
+        format=output_format,
+        output=none_or_str(cfg.output),
+    )
 
+
+def build_parameter_comparison(settings: ParameterComparisonSettings) -> str:
     base_counts = [
         base_parameter_count(
             problem=problem,
             encoder=encoder,
             decoder=decoder,
-            args=args,
+            args=settings,
         )
-        for problem in problems
-        for encoder in encoders
-        for decoder in decoders
+        for problem in settings.problems
+        for encoder in settings.encoders
+        for decoder in settings.decoders
     ]
-    target_params = resolve_target(args, base_counts)
+    target_params = resolve_target(settings, base_counts)
     rows = [
         parameter_row(
             problem=problem,
             encoder=encoder,
             decoder=decoder,
-            args=args,
+            args=settings,
             target_params=target_params,
         )
-        for problem in problems
-        for encoder in encoders
-        for decoder in decoders
+        for problem in settings.problems
+        for encoder in settings.encoders
+        for decoder in settings.decoders
     ]
-    text = format_rows(rows, args=args, target_params=target_params)
-    if args.output:
-        Path(args.output).parent.mkdir(parents=True, exist_ok=True)
-        Path(args.output).write_text(text, encoding="utf-8")
-    else:
-        print(text)
-    return 0
+    return format_rows(rows, args=settings, target_params=target_params)
 
 
 def base_parameter_count(
@@ -152,7 +185,7 @@ def base_parameter_count(
     problem: str,
     encoder: str,
     decoder: str,
-    args: argparse.Namespace,
+    args: ParameterComparisonSettings,
 ) -> int:
     return count_parameters(
         problem=problem,
@@ -169,7 +202,7 @@ def parameter_row(
     problem: str,
     encoder: str,
     decoder: str,
-    args: argparse.Namespace,
+    args: ParameterComparisonSettings,
     target_params: int,
 ) -> ParameterRow:
     base_d_ff = resolve_d_ff(args, args.d_model)
@@ -191,10 +224,10 @@ def parameter_row(
     delta = matched_params - target_params
     delta_pct = 100.0 * delta / max(target_params, 1)
     command_args = (
-        f"--d-model {matched_d_model} "
-        f"--d-ff {matched_d_ff} "
-        f"--num-layers {args.num_layers} "
-        f"--num-heads {args.num_heads}"
+        f"model.d_model={matched_d_model} "
+        f"model.d_ff={matched_d_ff} "
+        f"model.num_layers={args.num_layers} "
+        f"model.num_heads={args.num_heads}"
     )
     return ParameterRow(
         problem=problem,
@@ -220,7 +253,7 @@ def find_closest_budget(
     encoder: str,
     decoder: str,
     target_params: int,
-    args: argparse.Namespace,
+    args: ParameterComparisonSettings,
 ) -> tuple[int, int, int]:
     if args.match_target == "none" and args.target_params is None:
         d_ff = resolve_d_ff(args, args.d_model)
@@ -259,7 +292,8 @@ def find_closest_budget(
     if best is None:
         raise ValueError(
             f"No valid d_model candidates for encoder={encoder}; "
-            f"check --min-d-model/--max-d-model/--d-model-step/--num-heads."
+            "check search.min_d_model/search.max_d_model/"
+            "search.d_model_step/model.num_heads."
         )
     return best
 
@@ -271,7 +305,7 @@ def count_parameters(
     decoder: str,
     d_model: int,
     d_ff: int,
-    args: argparse.Namespace,
+    args: ParameterComparisonSettings,
 ) -> int:
     if not valid_d_model(encoder, d_model, args.num_heads):
         return sys.maxsize
@@ -292,7 +326,7 @@ def count_parameters(
     )
 
 
-def resolve_target(args: argparse.Namespace, base_counts: list[int]) -> int:
+def resolve_target(args: ParameterComparisonSettings, base_counts: list[int]) -> int:
     if args.target_params is not None:
         return args.target_params
     if not base_counts:
@@ -308,7 +342,7 @@ def resolve_target(args: argparse.Namespace, base_counts: list[int]) -> int:
     raise ValueError(f"Unsupported match target: {args.match_target}")
 
 
-def resolve_d_ff(args: argparse.Namespace, d_model: int) -> int:
+def resolve_d_ff(args: ParameterComparisonSettings, d_model: int) -> int:
     if args.d_ff is not None:
         return args.d_ff
     return d_model * args.d_ff_multiplier
@@ -324,8 +358,16 @@ def valid_d_model(encoder: str, d_model: int, num_heads: int) -> bool:
     return True
 
 
-def split_csv(raw: str) -> tuple[str, ...]:
-    return tuple(item.strip() for item in raw.split(",") if item.strip())
+def config_sequence(value: Any, default: Iterable[str]) -> tuple[str, ...]:
+    if value is None:
+        return tuple(default)
+    if isinstance(value, str):
+        if not value.strip():
+            return tuple(default)
+        return tuple(item.strip() for item in value.split(",") if item.strip())
+    if isinstance(value, Iterable):
+        return tuple(str(item) for item in value)
+    return (str(value),)
 
 
 def validate_values(
@@ -336,7 +378,7 @@ def validate_values(
     allowed_set = set(allowed)
     invalid = [value for value in values if value not in allowed_set]
     if invalid:
-        raise SystemExit(
+        raise ValueError(
             f"Unsupported {label}: {', '.join(invalid)}. Allowed: {', '.join(allowed)}"
         )
     return tuple(values)
@@ -345,7 +387,7 @@ def validate_values(
 def format_rows(
     rows: list[ParameterRow],
     *,
-    args: argparse.Namespace,
+    args: ParameterComparisonSettings,
     target_params: int,
 ) -> str:
     if args.format == "json":
@@ -419,7 +461,9 @@ def format_markdown(rows: list[ParameterRow], *, target_params: int) -> str:
             "Use the reported `d_model` and `d_ff` as run arguments, for example:",
             "",
             "```bash",
-            "uv run python -m src.experiments.run ... --d-model <d_model> --d-ff <d_ff>",
+            "uv run python -m src.experiments.run ... "
+            "model.d_model=<d_model> model.d_ff=<d_ff> "
+            "parameter_budget.enabled=false",
             "```",
         ]
     )
@@ -456,5 +500,21 @@ def summary(rows: list[ParameterRow]) -> dict[str, float | int]:
     }
 
 
+def none_or_int(value: Any) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, str) and value.lower() in {"none", "null"}:
+        return None
+    return int(value)
+
+
+def none_or_str(value: Any) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, str) and value.lower() in {"none", "null"}:
+        return None
+    return str(value)
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()
