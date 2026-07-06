@@ -13,6 +13,9 @@ the repo-root `data/` directory.
 | Minimum Vertex Cover | `src.generate_data.VERTEX_COVER` | graph partial-subset benchmark |
 | Orienteering | `src.generate_data.ORIENTEERING` | hybrid subset-sequence benchmark |
 
+Single-split commands are in [COMMANDS.md](COMMANDS.md). Chunked parallel runs
+for a 16-core server are in [PARALLEL.md](PARALLEL.md).
+
 Run generators as modules from the repo root, for example:
 
 ```bash

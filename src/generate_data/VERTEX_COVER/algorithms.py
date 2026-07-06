@@ -36,6 +36,7 @@ def solve_gurobi(
     adjacency: np.ndarray,
     *,
     seed: int | None = None,
+    time_limit_sec: float | None = None,
 ) -> VertexCoverSolution:
     adjacency = validate_adjacency(adjacency)
     try:
@@ -52,6 +53,8 @@ def solve_gurobi(
     model.Params.OutputFlag = 0
     if seed is not None:
         model.Params.Seed = int(seed)
+    if time_limit_sec is not None:
+        model.Params.TimeLimit = float(time_limit_sec)
 
     x = model.addVars(num_nodes, vtype=GRB.BINARY, name="x")
     model.setObjective(gp.quicksum(x[node] for node in range(num_nodes)), GRB.MINIMIZE)

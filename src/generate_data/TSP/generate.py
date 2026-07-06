@@ -5,7 +5,7 @@ from typing import Any
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.generate_data.common import instance_seed, write_jsonl
+from src.generate_data.common import instance_seed, iter_instance_indices, write_jsonl
 from src.generate_data.TSP.algorithms import solve_concorde
 
 
@@ -13,6 +13,7 @@ class TSPGenerationConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     num_instances: int = Field(gt=0)
+    start_index: int = Field(default=0, ge=0)
     num_nodes: int = Field(gt=0)
     seed: int
     output_path: str
@@ -26,7 +27,7 @@ def generate_tsp_instance(num_nodes: int, seed: int) -> np.ndarray:
 
 
 def iter_tsp_records(config: TSPGenerationConfig) -> Iterator[dict[str, Any]]:
-    for index in range(config.num_instances):
+    for index in iter_instance_indices(config.start_index, config.num_instances):
         seed = instance_seed(config.seed, index)
         coords = generate_tsp_instance(config.num_nodes, seed)
         record: dict[str, Any] = {
@@ -54,6 +55,7 @@ def _build_parser() -> argparse.ArgumentParser:
         description="Generate deterministic TSP JSONL data"
     )
     parser.add_argument("--num-instances", type=int, required=True)
+    parser.add_argument("--start-index", type=int, default=0)
     parser.add_argument("--num-nodes", type=int, required=True)
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--output-path", type=str, required=True)
@@ -66,6 +68,7 @@ def main() -> None:
     args = _build_parser().parse_args()
     config = TSPGenerationConfig(
         num_instances=args.num_instances,
+        start_index=args.start_index,
         num_nodes=args.num_nodes,
         seed=args.seed,
         output_path=args.output_path,

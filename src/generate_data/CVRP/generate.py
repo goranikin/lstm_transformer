@@ -5,7 +5,7 @@ from typing import Any, Self
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from src.generate_data.common import instance_seed, write_jsonl
+from src.generate_data.common import instance_seed, iter_instance_indices, write_jsonl
 from src.generate_data.CVRP.algorithms import solve_gurobi
 
 
@@ -13,6 +13,7 @@ class CVRPGenerationConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     num_instances: int = Field(gt=0)
+    start_index: int = Field(default=0, ge=0)
     num_customers: int = Field(gt=0)
     min_demand: int = Field(default=1, gt=0)
     max_demand: int = Field(default=9, gt=0)
@@ -60,7 +61,7 @@ def generate_cvrp_instance(
 
 
 def iter_cvrp_records(config: CVRPGenerationConfig) -> Iterator[dict[str, Any]]:
-    for index in range(config.num_instances):
+    for index in iter_instance_indices(config.start_index, config.num_instances):
         seed = instance_seed(config.seed, index)
         depot, coordinates, demands, vehicle_capacity = generate_cvrp_instance(
             config.num_customers,
@@ -106,6 +107,7 @@ def _build_parser() -> argparse.ArgumentParser:
         description="Generate deterministic CVRP JSONL data"
     )
     parser.add_argument("--num-instances", type=int, required=True)
+    parser.add_argument("--start-index", type=int, default=0)
     parser.add_argument("--num-customers", type=int, required=True)
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--output-path", type=str, required=True)
@@ -122,6 +124,7 @@ def main() -> None:
     args = _build_parser().parse_args()
     config = CVRPGenerationConfig(
         num_instances=args.num_instances,
+        start_index=args.start_index,
         num_customers=args.num_customers,
         min_demand=args.min_demand,
         max_demand=args.max_demand,

@@ -220,6 +220,7 @@ uv run python -m src.generate_data.ORIENTEERING.generate \
 
 - See the [Solvers](#solvers) table for label algorithms and time limits.
 - Knapsack `dynamic_programming` labels scale with item count and capacity.
+- For chunked parallel runs on a 16-core server, see [PARALLEL.md](PARALLEL.md).
 - Training configs in this repo expect `paths.train` and `paths.val` to point at
   the train and validation files above, for example:
 

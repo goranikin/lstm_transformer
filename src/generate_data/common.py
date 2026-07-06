@@ -17,6 +17,16 @@ def instance_seed(base_seed: int, index: int) -> int:
     return base_seed + index
 
 
+def iter_instance_indices(start_index: int, num_instances: int) -> Iterator[int]:
+    """Yield global instance indices for a generation chunk."""
+    if start_index < 0:
+        raise ValueError("start_index must be non-negative")
+    if num_instances <= 0:
+        raise ValueError("num_instances must be positive")
+    for offset in range(num_instances):
+        yield start_index + offset
+
+
 def ensure_parent_dir(path: str) -> None:
     directory = os.path.dirname(path)
     if directory:

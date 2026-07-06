@@ -5,7 +5,7 @@ from typing import Any, Self
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from src.generate_data.common import instance_seed, write_jsonl
+from src.generate_data.common import instance_seed, iter_instance_indices, write_jsonl
 from src.generate_data.ORIENTEERING.algorithms import solve_gurobi
 
 
@@ -13,6 +13,7 @@ class OrienteeringGenerationConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     num_instances: int = Field(gt=0)
+    start_index: int = Field(default=0, ge=0)
     num_nodes: int = Field(gt=0)
     min_prize: int = Field(default=1, ge=0)
     max_prize: int = Field(default=100, ge=0)
@@ -55,7 +56,7 @@ def generate_orienteering_instance(
 def iter_orienteering_records(
     config: OrienteeringGenerationConfig,
 ) -> Iterator[dict[str, Any]]:
-    for index in range(config.num_instances):
+    for index in iter_instance_indices(config.start_index, config.num_instances):
         seed = instance_seed(config.seed, index)
         depot, coordinates, prizes, travel_budget = generate_orienteering_instance(
             config.num_nodes,
@@ -98,6 +99,7 @@ def _build_parser() -> argparse.ArgumentParser:
         description="Generate deterministic Orienteering JSONL data"
     )
     parser.add_argument("--num-instances", type=int, required=True)
+    parser.add_argument("--start-index", type=int, default=0)
     parser.add_argument("--num-nodes", type=int, required=True)
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--output-path", type=str, required=True)
@@ -113,6 +115,7 @@ def main() -> None:
     args = _build_parser().parse_args()
     config = OrienteeringGenerationConfig(
         num_instances=args.num_instances,
+        start_index=args.start_index,
         num_nodes=args.num_nodes,
         min_prize=args.min_prize,
         max_prize=args.max_prize,
