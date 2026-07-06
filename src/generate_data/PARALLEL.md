@@ -2,9 +2,10 @@
 
 Run all commands from the repository root.
 
-This guide chunks large splits so you can run multiple jobs in parallel across
-zellij panes. Each chunk writes a `.partNN.jsonl` file. Merge the parts in
-order after every chunk for that split has finished.
+This guide chunks large splits so you can run all chunks for a split in **one
+zellij tab**. Each chunk writes a `.partNN.jsonl` file. Append `&` to start
+jobs in the background, then run `wait` to block until every chunk in that split
+finishes. Merge the parts in order after each split completes.
 
 ## Setup
 
@@ -27,7 +28,9 @@ Recommended limits for a one-day run on 16 cores:
 | Max Clique | `10` |
 | MIS / Vertex Cover | omit (no limit) |
 
-Run at most **12 jobs at once** on a 16-core machine.
+Train splits launch **8 parallel chunks**; val/test splits launch **2**. That
+fits a 16-core machine. Detach from zellij with `Ctrl-g` then `d` while jobs
+keep running. Check progress with `jobs -l` or `wc -l data/*/*.part*.jsonl`.
 
 ## Chunk layout
 
@@ -84,28 +87,34 @@ rm data/*/*.part*.jsonl
 ### Train (`knapsack100_seed1234.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 0 --num-items 100 --seed 1234 --output-path data/knapsack/knapsack100_seed1234.part00.jsonl
-uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 8000 --num-items 100 --seed 1234 --output-path data/knapsack/knapsack100_seed1234.part01.jsonl
-uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 16000 --num-items 100 --seed 1234 --output-path data/knapsack/knapsack100_seed1234.part02.jsonl
-uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 24000 --num-items 100 --seed 1234 --output-path data/knapsack/knapsack100_seed1234.part03.jsonl
-uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 32000 --num-items 100 --seed 1234 --output-path data/knapsack/knapsack100_seed1234.part04.jsonl
-uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 40000 --num-items 100 --seed 1234 --output-path data/knapsack/knapsack100_seed1234.part05.jsonl
-uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 48000 --num-items 100 --seed 1234 --output-path data/knapsack/knapsack100_seed1234.part06.jsonl
-uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 56000 --num-items 100 --seed 1234 --output-path data/knapsack/knapsack100_seed1234.part07.jsonl
+uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 0 --num-items 100 --seed 1234 --output-path data/knapsack/knapsack100_seed1234.part00.jsonl &
+uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 8000 --num-items 100 --seed 1234 --output-path data/knapsack/knapsack100_seed1234.part01.jsonl &
+uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 16000 --num-items 100 --seed 1234 --output-path data/knapsack/knapsack100_seed1234.part02.jsonl &
+uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 24000 --num-items 100 --seed 1234 --output-path data/knapsack/knapsack100_seed1234.part03.jsonl &
+uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 32000 --num-items 100 --seed 1234 --output-path data/knapsack/knapsack100_seed1234.part04.jsonl &
+uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 40000 --num-items 100 --seed 1234 --output-path data/knapsack/knapsack100_seed1234.part05.jsonl &
+uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 48000 --num-items 100 --seed 1234 --output-path data/knapsack/knapsack100_seed1234.part06.jsonl &
+uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 56000 --num-items 100 --seed 1234 --output-path data/knapsack/knapsack100_seed1234.part07.jsonl &
+wait
+echo "Knapsack train chunks finished."
 ```
 
 ### Validation (`knapsack100_val_seed4321.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.KNAPSACK.generate --num-instances 5000 --start-index 0 --num-items 100 --seed 4321 --output-path data/knapsack/knapsack100_val_seed4321.part00.jsonl
-uv run python -m src.generate_data.KNAPSACK.generate --num-instances 5000 --start-index 5000 --num-items 100 --seed 4321 --output-path data/knapsack/knapsack100_val_seed4321.part01.jsonl
+uv run python -m src.generate_data.KNAPSACK.generate --num-instances 5000 --start-index 0 --num-items 100 --seed 4321 --output-path data/knapsack/knapsack100_val_seed4321.part00.jsonl &
+uv run python -m src.generate_data.KNAPSACK.generate --num-instances 5000 --start-index 5000 --num-items 100 --seed 4321 --output-path data/knapsack/knapsack100_val_seed4321.part01.jsonl &
+wait
+echo "Knapsack validation chunks finished."
 ```
 
 ### Test (`knapsack100_test_seed9999.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.KNAPSACK.generate --num-instances 5000 --start-index 0 --num-items 100 --seed 9999 --output-path data/knapsack/knapsack100_test_seed9999.part00.jsonl
-uv run python -m src.generate_data.KNAPSACK.generate --num-instances 5000 --start-index 5000 --num-items 100 --seed 9999 --output-path data/knapsack/knapsack100_test_seed9999.part01.jsonl
+uv run python -m src.generate_data.KNAPSACK.generate --num-instances 5000 --start-index 0 --num-items 100 --seed 9999 --output-path data/knapsack/knapsack100_test_seed9999.part00.jsonl &
+uv run python -m src.generate_data.KNAPSACK.generate --num-instances 5000 --start-index 5000 --num-items 100 --seed 9999 --output-path data/knapsack/knapsack100_test_seed9999.part01.jsonl &
+wait
+echo "Knapsack test chunks finished."
 ```
 
 ## TSP
@@ -113,28 +122,34 @@ uv run python -m src.generate_data.KNAPSACK.generate --num-instances 5000 --star
 ### Train (`tsp50_seed1234.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 0 --num-nodes 50 --seed 1234 --output-path data/tsp/tsp50_seed1234.part00.jsonl
-uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 8000 --num-nodes 50 --seed 1234 --output-path data/tsp/tsp50_seed1234.part01.jsonl
-uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 16000 --num-nodes 50 --seed 1234 --output-path data/tsp/tsp50_seed1234.part02.jsonl
-uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 24000 --num-nodes 50 --seed 1234 --output-path data/tsp/tsp50_seed1234.part03.jsonl
-uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 32000 --num-nodes 50 --seed 1234 --output-path data/tsp/tsp50_seed1234.part04.jsonl
-uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 40000 --num-nodes 50 --seed 1234 --output-path data/tsp/tsp50_seed1234.part05.jsonl
-uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 48000 --num-nodes 50 --seed 1234 --output-path data/tsp/tsp50_seed1234.part06.jsonl
-uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 56000 --num-nodes 50 --seed 1234 --output-path data/tsp/tsp50_seed1234.part07.jsonl
+uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 0 --num-nodes 50 --seed 1234 --output-path data/tsp/tsp50_seed1234.part00.jsonl &
+uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 8000 --num-nodes 50 --seed 1234 --output-path data/tsp/tsp50_seed1234.part01.jsonl &
+uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 16000 --num-nodes 50 --seed 1234 --output-path data/tsp/tsp50_seed1234.part02.jsonl &
+uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 24000 --num-nodes 50 --seed 1234 --output-path data/tsp/tsp50_seed1234.part03.jsonl &
+uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 32000 --num-nodes 50 --seed 1234 --output-path data/tsp/tsp50_seed1234.part04.jsonl &
+uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 40000 --num-nodes 50 --seed 1234 --output-path data/tsp/tsp50_seed1234.part05.jsonl &
+uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 48000 --num-nodes 50 --seed 1234 --output-path data/tsp/tsp50_seed1234.part06.jsonl &
+uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 56000 --num-nodes 50 --seed 1234 --output-path data/tsp/tsp50_seed1234.part07.jsonl &
+wait
+echo "TSP train chunks finished."
 ```
 
 ### Validation (`tsp50_val_seed4321.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.TSP.generate --num-instances 5000 --start-index 0 --num-nodes 50 --seed 4321 --output-path data/tsp/tsp50_val_seed4321.part00.jsonl
-uv run python -m src.generate_data.TSP.generate --num-instances 5000 --start-index 5000 --num-nodes 50 --seed 4321 --output-path data/tsp/tsp50_val_seed4321.part01.jsonl
+uv run python -m src.generate_data.TSP.generate --num-instances 5000 --start-index 0 --num-nodes 50 --seed 4321 --output-path data/tsp/tsp50_val_seed4321.part00.jsonl &
+uv run python -m src.generate_data.TSP.generate --num-instances 5000 --start-index 5000 --num-nodes 50 --seed 4321 --output-path data/tsp/tsp50_val_seed4321.part01.jsonl &
+wait
+echo "TSP validation chunks finished."
 ```
 
 ### Test (`tsp50_test_seed9999.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.TSP.generate --num-instances 5000 --start-index 0 --num-nodes 50 --seed 9999 --output-path data/tsp/tsp50_test_seed9999.part00.jsonl
-uv run python -m src.generate_data.TSP.generate --num-instances 5000 --start-index 5000 --num-nodes 50 --seed 9999 --output-path data/tsp/tsp50_test_seed9999.part01.jsonl
+uv run python -m src.generate_data.TSP.generate --num-instances 5000 --start-index 0 --num-nodes 50 --seed 9999 --output-path data/tsp/tsp50_test_seed9999.part00.jsonl &
+uv run python -m src.generate_data.TSP.generate --num-instances 5000 --start-index 5000 --num-nodes 50 --seed 9999 --output-path data/tsp/tsp50_test_seed9999.part01.jsonl &
+wait
+echo "TSP test chunks finished."
 ```
 
 ## CVRP
@@ -144,28 +159,34 @@ Solver time limit: **5 seconds** per instance.
 ### Train (`cvrp50_seed1234.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 0 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/cvrp/cvrp50_seed1234.part00.jsonl
-uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 8000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/cvrp/cvrp50_seed1234.part01.jsonl
-uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 16000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/cvrp/cvrp50_seed1234.part02.jsonl
-uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 24000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/cvrp/cvrp50_seed1234.part03.jsonl
-uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 32000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/cvrp/cvrp50_seed1234.part04.jsonl
-uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 40000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/cvrp/cvrp50_seed1234.part05.jsonl
-uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 48000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/cvrp/cvrp50_seed1234.part06.jsonl
-uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 56000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/cvrp/cvrp50_seed1234.part07.jsonl
+uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 0 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/cvrp/cvrp50_seed1234.part00.jsonl &
+uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 8000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/cvrp/cvrp50_seed1234.part01.jsonl &
+uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 16000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/cvrp/cvrp50_seed1234.part02.jsonl &
+uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 24000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/cvrp/cvrp50_seed1234.part03.jsonl &
+uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 32000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/cvrp/cvrp50_seed1234.part04.jsonl &
+uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 40000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/cvrp/cvrp50_seed1234.part05.jsonl &
+uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 48000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/cvrp/cvrp50_seed1234.part06.jsonl &
+uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 56000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/cvrp/cvrp50_seed1234.part07.jsonl &
+wait
+echo "CVRP train chunks finished."
 ```
 
 ### Validation (`cvrp50_val_seed4321.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.CVRP.generate --num-instances 5000 --start-index 0 --num-customers 50 --seed 4321 --solver-time-limit-sec 5 --output-path data/cvrp/cvrp50_val_seed4321.part00.jsonl
-uv run python -m src.generate_data.CVRP.generate --num-instances 5000 --start-index 5000 --num-customers 50 --seed 4321 --solver-time-limit-sec 5 --output-path data/cvrp/cvrp50_val_seed4321.part01.jsonl
+uv run python -m src.generate_data.CVRP.generate --num-instances 5000 --start-index 0 --num-customers 50 --seed 4321 --solver-time-limit-sec 5 --output-path data/cvrp/cvrp50_val_seed4321.part00.jsonl &
+uv run python -m src.generate_data.CVRP.generate --num-instances 5000 --start-index 5000 --num-customers 50 --seed 4321 --solver-time-limit-sec 5 --output-path data/cvrp/cvrp50_val_seed4321.part01.jsonl &
+wait
+echo "CVRP validation chunks finished."
 ```
 
 ### Test (`cvrp50_test_seed9999.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.CVRP.generate --num-instances 5000 --start-index 0 --num-customers 50 --seed 9999 --solver-time-limit-sec 5 --output-path data/cvrp/cvrp50_test_seed9999.part00.jsonl
-uv run python -m src.generate_data.CVRP.generate --num-instances 5000 --start-index 5000 --num-customers 50 --seed 9999 --solver-time-limit-sec 5 --output-path data/cvrp/cvrp50_test_seed9999.part01.jsonl
+uv run python -m src.generate_data.CVRP.generate --num-instances 5000 --start-index 0 --num-customers 50 --seed 9999 --solver-time-limit-sec 5 --output-path data/cvrp/cvrp50_test_seed9999.part00.jsonl &
+uv run python -m src.generate_data.CVRP.generate --num-instances 5000 --start-index 5000 --num-customers 50 --seed 9999 --solver-time-limit-sec 5 --output-path data/cvrp/cvrp50_test_seed9999.part01.jsonl &
+wait
+echo "CVRP test chunks finished."
 ```
 
 ## MIS
@@ -173,28 +194,34 @@ uv run python -m src.generate_data.CVRP.generate --num-instances 5000 --start-in
 ### Train (`mis100_p015_seed1234.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 0 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/mis/mis100_p015_seed1234.part00.jsonl
-uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 8000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/mis/mis100_p015_seed1234.part01.jsonl
-uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 16000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/mis/mis100_p015_seed1234.part02.jsonl
-uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 24000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/mis/mis100_p015_seed1234.part03.jsonl
-uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 32000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/mis/mis100_p015_seed1234.part04.jsonl
-uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 40000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/mis/mis100_p015_seed1234.part05.jsonl
-uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 48000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/mis/mis100_p015_seed1234.part06.jsonl
-uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 56000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/mis/mis100_p015_seed1234.part07.jsonl
+uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 0 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/mis/mis100_p015_seed1234.part00.jsonl &
+uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 8000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/mis/mis100_p015_seed1234.part01.jsonl &
+uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 16000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/mis/mis100_p015_seed1234.part02.jsonl &
+uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 24000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/mis/mis100_p015_seed1234.part03.jsonl &
+uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 32000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/mis/mis100_p015_seed1234.part04.jsonl &
+uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 40000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/mis/mis100_p015_seed1234.part05.jsonl &
+uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 48000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/mis/mis100_p015_seed1234.part06.jsonl &
+uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 56000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/mis/mis100_p015_seed1234.part07.jsonl &
+wait
+echo "MIS train chunks finished."
 ```
 
 ### Validation (`mis100_p015_val_seed4321.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.MIS.generate --num-instances 5000 --start-index 0 --num-nodes 100 --edge-probability 0.15 --seed 4321 --output-path data/mis/mis100_p015_val_seed4321.part00.jsonl
-uv run python -m src.generate_data.MIS.generate --num-instances 5000 --start-index 5000 --num-nodes 100 --edge-probability 0.15 --seed 4321 --output-path data/mis/mis100_p015_val_seed4321.part01.jsonl
+uv run python -m src.generate_data.MIS.generate --num-instances 5000 --start-index 0 --num-nodes 100 --edge-probability 0.15 --seed 4321 --output-path data/mis/mis100_p015_val_seed4321.part00.jsonl &
+uv run python -m src.generate_data.MIS.generate --num-instances 5000 --start-index 5000 --num-nodes 100 --edge-probability 0.15 --seed 4321 --output-path data/mis/mis100_p015_val_seed4321.part01.jsonl &
+wait
+echo "MIS validation chunks finished."
 ```
 
 ### Test (`mis100_p015_test_seed9999.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.MIS.generate --num-instances 5000 --start-index 0 --num-nodes 100 --edge-probability 0.15 --seed 9999 --output-path data/mis/mis100_p015_test_seed9999.part00.jsonl
-uv run python -m src.generate_data.MIS.generate --num-instances 5000 --start-index 5000 --num-nodes 100 --edge-probability 0.15 --seed 9999 --output-path data/mis/mis100_p015_test_seed9999.part01.jsonl
+uv run python -m src.generate_data.MIS.generate --num-instances 5000 --start-index 0 --num-nodes 100 --edge-probability 0.15 --seed 9999 --output-path data/mis/mis100_p015_test_seed9999.part00.jsonl &
+uv run python -m src.generate_data.MIS.generate --num-instances 5000 --start-index 5000 --num-nodes 100 --edge-probability 0.15 --seed 9999 --output-path data/mis/mis100_p015_test_seed9999.part01.jsonl &
+wait
+echo "MIS test chunks finished."
 ```
 
 ## Maximum Clique
@@ -204,28 +231,34 @@ Solver time limit: **10 seconds** per instance.
 ### Train (`max_clique100_p050_seed1234.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 0 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path data/max_clique/max_clique100_p050_seed1234.part00.jsonl
-uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 8000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path data/max_clique/max_clique100_p050_seed1234.part01.jsonl
-uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 16000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path data/max_clique/max_clique100_p050_seed1234.part02.jsonl
-uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 24000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path data/max_clique/max_clique100_p050_seed1234.part03.jsonl
-uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 32000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path data/max_clique/max_clique100_p050_seed1234.part04.jsonl
-uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 40000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path data/max_clique/max_clique100_p050_seed1234.part05.jsonl
-uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 48000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path data/max_clique/max_clique100_p050_seed1234.part06.jsonl
-uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 56000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path data/max_clique/max_clique100_p050_seed1234.part07.jsonl
+uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 0 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path data/max_clique/max_clique100_p050_seed1234.part00.jsonl &
+uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 8000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path data/max_clique/max_clique100_p050_seed1234.part01.jsonl &
+uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 16000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path data/max_clique/max_clique100_p050_seed1234.part02.jsonl &
+uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 24000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path data/max_clique/max_clique100_p050_seed1234.part03.jsonl &
+uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 32000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path data/max_clique/max_clique100_p050_seed1234.part04.jsonl &
+uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 40000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path data/max_clique/max_clique100_p050_seed1234.part05.jsonl &
+uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 48000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path data/max_clique/max_clique100_p050_seed1234.part06.jsonl &
+uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 56000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path data/max_clique/max_clique100_p050_seed1234.part07.jsonl &
+wait
+echo "Max Clique train chunks finished."
 ```
 
 ### Validation (`max_clique100_p050_val_seed4321.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 5000 --start-index 0 --num-nodes 100 --edge-probability 0.5 --seed 4321 --solver-time-limit-sec 10 --output-path data/max_clique/max_clique100_p050_val_seed4321.part00.jsonl
-uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 5000 --start-index 5000 --num-nodes 100 --edge-probability 0.5 --seed 4321 --solver-time-limit-sec 10 --output-path data/max_clique/max_clique100_p050_val_seed4321.part01.jsonl
+uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 5000 --start-index 0 --num-nodes 100 --edge-probability 0.5 --seed 4321 --solver-time-limit-sec 10 --output-path data/max_clique/max_clique100_p050_val_seed4321.part00.jsonl &
+uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 5000 --start-index 5000 --num-nodes 100 --edge-probability 0.5 --seed 4321 --solver-time-limit-sec 10 --output-path data/max_clique/max_clique100_p050_val_seed4321.part01.jsonl &
+wait
+echo "Max Clique validation chunks finished."
 ```
 
 ### Test (`max_clique100_p050_test_seed9999.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 5000 --start-index 0 --num-nodes 100 --edge-probability 0.5 --seed 9999 --solver-time-limit-sec 10 --output-path data/max_clique/max_clique100_p050_test_seed9999.part00.jsonl
-uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 5000 --start-index 5000 --num-nodes 100 --edge-probability 0.5 --seed 9999 --solver-time-limit-sec 10 --output-path data/max_clique/max_clique100_p050_test_seed9999.part01.jsonl
+uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 5000 --start-index 0 --num-nodes 100 --edge-probability 0.5 --seed 9999 --solver-time-limit-sec 10 --output-path data/max_clique/max_clique100_p050_test_seed9999.part00.jsonl &
+uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 5000 --start-index 5000 --num-nodes 100 --edge-probability 0.5 --seed 9999 --solver-time-limit-sec 10 --output-path data/max_clique/max_clique100_p050_test_seed9999.part01.jsonl &
+wait
+echo "Max Clique test chunks finished."
 ```
 
 ## Minimum Vertex Cover
@@ -233,28 +266,34 @@ uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 5000 --st
 ### Train (`vertex_cover100_p015_seed1234.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 0 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/vertex_cover/vertex_cover100_p015_seed1234.part00.jsonl
-uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 8000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/vertex_cover/vertex_cover100_p015_seed1234.part01.jsonl
-uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 16000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/vertex_cover/vertex_cover100_p015_seed1234.part02.jsonl
-uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 24000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/vertex_cover/vertex_cover100_p015_seed1234.part03.jsonl
-uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 32000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/vertex_cover/vertex_cover100_p015_seed1234.part04.jsonl
-uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 40000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/vertex_cover/vertex_cover100_p015_seed1234.part05.jsonl
-uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 48000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/vertex_cover/vertex_cover100_p015_seed1234.part06.jsonl
-uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 56000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/vertex_cover/vertex_cover100_p015_seed1234.part07.jsonl
+uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 0 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/vertex_cover/vertex_cover100_p015_seed1234.part00.jsonl &
+uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 8000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/vertex_cover/vertex_cover100_p015_seed1234.part01.jsonl &
+uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 16000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/vertex_cover/vertex_cover100_p015_seed1234.part02.jsonl &
+uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 24000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/vertex_cover/vertex_cover100_p015_seed1234.part03.jsonl &
+uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 32000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/vertex_cover/vertex_cover100_p015_seed1234.part04.jsonl &
+uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 40000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/vertex_cover/vertex_cover100_p015_seed1234.part05.jsonl &
+uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 48000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/vertex_cover/vertex_cover100_p015_seed1234.part06.jsonl &
+uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 56000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path data/vertex_cover/vertex_cover100_p015_seed1234.part07.jsonl &
+wait
+echo "Vertex Cover train chunks finished."
 ```
 
 ### Validation (`vertex_cover100_p015_val_seed4321.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 5000 --start-index 0 --num-nodes 100 --edge-probability 0.15 --seed 4321 --output-path data/vertex_cover/vertex_cover100_p015_val_seed4321.part00.jsonl
-uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 5000 --start-index 5000 --num-nodes 100 --edge-probability 0.15 --seed 4321 --output-path data/vertex_cover/vertex_cover100_p015_val_seed4321.part01.jsonl
+uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 5000 --start-index 0 --num-nodes 100 --edge-probability 0.15 --seed 4321 --output-path data/vertex_cover/vertex_cover100_p015_val_seed4321.part00.jsonl &
+uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 5000 --start-index 5000 --num-nodes 100 --edge-probability 0.15 --seed 4321 --output-path data/vertex_cover/vertex_cover100_p015_val_seed4321.part01.jsonl &
+wait
+echo "Vertex Cover validation chunks finished."
 ```
 
 ### Test (`vertex_cover100_p015_test_seed9999.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 5000 --start-index 0 --num-nodes 100 --edge-probability 0.15 --seed 9999 --output-path data/vertex_cover/vertex_cover100_p015_test_seed9999.part00.jsonl
-uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 5000 --start-index 5000 --num-nodes 100 --edge-probability 0.15 --seed 9999 --output-path data/vertex_cover/vertex_cover100_p015_test_seed9999.part01.jsonl
+uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 5000 --start-index 0 --num-nodes 100 --edge-probability 0.15 --seed 9999 --output-path data/vertex_cover/vertex_cover100_p015_test_seed9999.part00.jsonl &
+uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 5000 --start-index 5000 --num-nodes 100 --edge-probability 0.15 --seed 9999 --output-path data/vertex_cover/vertex_cover100_p015_test_seed9999.part01.jsonl &
+wait
+echo "Vertex Cover test chunks finished."
 ```
 
 ## Orienteering
@@ -264,37 +303,48 @@ Solver time limit: **5 seconds** per instance.
 ### Train (`orienteering50_seed1234.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 0 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/orienteering/orienteering50_seed1234.part00.jsonl
-uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 8000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/orienteering/orienteering50_seed1234.part01.jsonl
-uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 16000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/orienteering/orienteering50_seed1234.part02.jsonl
-uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 24000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/orienteering/orienteering50_seed1234.part03.jsonl
-uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 32000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/orienteering/orienteering50_seed1234.part04.jsonl
-uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 40000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/orienteering/orienteering50_seed1234.part05.jsonl
-uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 48000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/orienteering/orienteering50_seed1234.part06.jsonl
-uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 56000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/orienteering/orienteering50_seed1234.part07.jsonl
+uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 0 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/orienteering/orienteering50_seed1234.part00.jsonl &
+uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 8000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/orienteering/orienteering50_seed1234.part01.jsonl &
+uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 16000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/orienteering/orienteering50_seed1234.part02.jsonl &
+uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 24000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/orienteering/orienteering50_seed1234.part03.jsonl &
+uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 32000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/orienteering/orienteering50_seed1234.part04.jsonl &
+uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 40000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/orienteering/orienteering50_seed1234.part05.jsonl &
+uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 48000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/orienteering/orienteering50_seed1234.part06.jsonl &
+uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 56000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path data/orienteering/orienteering50_seed1234.part07.jsonl &
+wait
+echo "Orienteering train chunks finished."
 ```
 
 ### Validation (`orienteering50_val_seed4321.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 5000 --start-index 0 --num-nodes 50 --seed 4321 --solver-time-limit-sec 5 --output-path data/orienteering/orienteering50_val_seed4321.part00.jsonl
-uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 5000 --start-index 5000 --num-nodes 50 --seed 4321 --solver-time-limit-sec 5 --output-path data/orienteering/orienteering50_val_seed4321.part01.jsonl
+uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 5000 --start-index 0 --num-nodes 50 --seed 4321 --solver-time-limit-sec 5 --output-path data/orienteering/orienteering50_val_seed4321.part00.jsonl &
+uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 5000 --start-index 5000 --num-nodes 50 --seed 4321 --solver-time-limit-sec 5 --output-path data/orienteering/orienteering50_val_seed4321.part01.jsonl &
+wait
+echo "Orienteering validation chunks finished."
 ```
 
 ### Test (`orienteering50_test_seed9999.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 5000 --start-index 0 --num-nodes 50 --seed 9999 --solver-time-limit-sec 5 --output-path data/orienteering/orienteering50_test_seed9999.part00.jsonl
-uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 5000 --start-index 5000 --num-nodes 50 --seed 9999 --solver-time-limit-sec 5 --output-path data/orienteering/orienteering50_test_seed9999.part01.jsonl
+uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 5000 --start-index 0 --num-nodes 50 --seed 9999 --solver-time-limit-sec 5 --output-path data/orienteering/orienteering50_test_seed9999.part00.jsonl &
+uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 5000 --start-index 5000 --num-nodes 50 --seed 9999 --solver-time-limit-sec 5 --output-path data/orienteering/orienteering50_test_seed9999.part01.jsonl &
+wait
+echo "Orienteering test chunks finished."
 ```
 
 ## Suggested zellij workflow
 
 1. Open `zellij --session datagen`.
-2. Create 12 panes.
-3. Paste one chunk command into each pane.
-4. When a pane finishes, start the next pending chunk there.
-5. After all parts for a split finish, run the matching `cat` merge command.
+2. Use **one tab per problem** (or per split for heavy problems).
+3. Paste the full code block for that split into the tab.
+4. After `wait` returns, run the matching `cat` merge command from above.
+5. Keep a monitor tab running:
+
+```bash
+watch -n 2 'free -h; echo; ps -eo pid,comm,%mem,rss --sort=-rss | head -15'
+```
+
 6. Verify line counts at the end:
 
 ```bash
