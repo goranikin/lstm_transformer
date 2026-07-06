@@ -143,7 +143,7 @@ uv run python -m src.experiments.matrix \
 This expands to:
 
 ```text
-2 encoders x 4 decoders x 7 problems x 2 modes x 3 seeds = 336 runs
+1 encoder x 4 decoders x 7 problems x 2 modes x 3 seeds = 168 runs
 ```
 
 ## Staged Execution
@@ -222,14 +222,6 @@ uv run python -m src.experiments.matrix \
   stage=all
 ```
 
-Pointer-Network-style recurrent encoder only:
-
-```bash
-uv run python -m src.experiments.matrix \
-  'encoders=[lstm]' \
-  stage=all
-```
-
 Sigmoid decoder only:
 
 ```bash
@@ -298,7 +290,7 @@ For smoke/debug runs, disable checkpoints and progress bars:
 ```bash
 uv run python -m src.experiments.run \
   problem=knapsack \
-  encoder=lstm \
+  encoder=attention \
   decoder=sigmoid_subset \
   mode=supervised \
   data.use_default_paths=false \

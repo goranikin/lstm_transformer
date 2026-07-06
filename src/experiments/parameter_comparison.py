@@ -19,7 +19,6 @@ from omegaconf import DictConfig, OmegaConf
 
 from src.constants import (
     DECODER_KINDS,
-    ENCODER_KINDS,
     MATRIX_ENCODERS,
     PROBLEM_NAMES,
     DecoderKind,
@@ -108,7 +107,7 @@ def settings_from_config(cfg: DictConfig) -> ParameterComparisonSettings:
     )
     encoders = validate_values(
         config_sequence(cfg.encoders, MATRIX_ENCODERS),
-        ENCODER_KINDS,
+        MATRIX_ENCODERS,
         "encoder",
     )
     include_graph_attention = bool(cfg.include_graph_attention)

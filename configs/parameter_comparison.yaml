@@ -1,7 +1,6 @@
 problems: null
 encoders:
   - attention
-  - lstm
 include_graph_attention: false
 decoders:
   - attention_pointer

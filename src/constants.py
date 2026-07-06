@@ -35,7 +35,7 @@ PROBLEM_NAMES: tuple[ProblemName, ...] = (
 
 ENCODER_KINDS: tuple[EncoderKind, ...] = ("attention", "lstm", "graph_attention")
 
-MATRIX_ENCODERS: tuple[EncoderKind, ...] = ("attention", "lstm")
+MATRIX_ENCODERS: tuple[EncoderKind, ...] = ("attention",)
 
 DECODER_KINDS: tuple[DecoderKind, ...] = (
     "attention_pointer",

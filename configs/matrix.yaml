@@ -2,7 +2,6 @@ stage: all
 problems: null
 encoders:
   - attention
-  - lstm
 decoders:
   - attention_pointer
   - lstm_pointer

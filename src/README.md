@@ -89,7 +89,6 @@ repair_solution()
 Encoders:
 
 - `attention`
-- `lstm`
 - `graph_attention` currently aliases attention-style encoding
 
 Decoders:
@@ -102,7 +101,7 @@ Decoders:
 The primary experiment matrix is:
 
 ```text
-2 encoders x 4 decoders x 7 problems x 2 modes x 3 seeds = 336 runs
+1 encoder x 4 decoders x 7 problems x 2 modes x 3 seeds = 168 runs
 ```
 
 Use `src.experiments.matrix` to stage or dry-run those commands.
