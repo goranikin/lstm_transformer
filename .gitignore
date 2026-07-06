@@ -17,3 +17,5 @@ data/
 
 *.log
 .vscode/
+
+.ruff_cache/
