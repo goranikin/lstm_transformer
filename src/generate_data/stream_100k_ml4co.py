@@ -21,7 +21,7 @@ from src.paths import PUBLIC_DATA_84K_ROOT
 REPO_ID = "ML4CO/ML4CO-Bench-101-SL"
 
 # TSP is intentionally excluded here.
-PROBLEMS = ["mlc"]
+PROBLEMS = ["mcl"]
 
 
 def problem_from_path(path: str, dataset_subdir: str) -> str | None:
