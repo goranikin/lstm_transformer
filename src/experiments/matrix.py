@@ -62,9 +62,9 @@ def run_from_config(cfg: DictConfig) -> list[list[str]]:
         modes=modes,
         seeds=seeds,
         data_root=resolve_data_root(cfg.data.root),
-        train_seed=int(cfg.data.train.seed),
-        val_seed=int(cfg.data.validation.seed),
-        test_seed=int(cfg.data.test.seed),
+        train_instances=int(cfg.data.train.instances),
+        val_instances=int(cfg.data.validation.instances),
+        test_instances=int(cfg.data.test.instances),
         output_root=str(resolve_user_path(cfg.paths.output_root)),
         parameter_budget=str(resolve_user_path(cfg.parameter_budget.path)),
         use_parameter_budget=bool(cfg.parameter_budget.enabled),
@@ -108,9 +108,9 @@ def build_commands(
     modes: Sequence[str],
     seeds: Sequence[int],
     data_root: Path,
-    train_seed: int,
-    val_seed: int,
-    test_seed: int,
+    train_instances: int,
+    val_instances: int,
+    test_instances: int,
     output_root: str,
     parameter_budget: str,
     use_parameter_budget: bool,
@@ -142,9 +142,9 @@ def build_commands(
                             continue
                         paths = problem_split_paths(
                             problem,
-                            train_seed=train_seed,
-                            val_seed=val_seed,
-                            test_seed=test_seed,
+                            train_instances=train_instances,
+                            val_instances=val_instances,
+                            test_instances=test_instances,
                             data_root=data_root,
                         )
                         output_dir = (

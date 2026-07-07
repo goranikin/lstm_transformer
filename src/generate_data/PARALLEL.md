@@ -47,33 +47,33 @@ disjoint.
 Run these only after **all** parts for a split have finished.
 
 ```bash
-cat ~/local_db/lstm_transformer/knapsack/knapsack100_seed1234.part{00..07}.jsonl > ~/local_db/lstm_transformer/knapsack/knapsack100_seed1234.jsonl
-cat ~/local_db/lstm_transformer/knapsack/knapsack100_val_seed4321.part{00..01}.jsonl > ~/local_db/lstm_transformer/knapsack/knapsack100_val_seed4321.jsonl
-cat ~/local_db/lstm_transformer/knapsack/knapsack100_test_seed9999.part{00..01}.jsonl > ~/local_db/lstm_transformer/knapsack/knapsack100_test_seed9999.jsonl
+cat ~/local_db/lstm_transformer/knapsack/knapsack100_train_64000.part{00..07}.jsonl > ~/local_db/lstm_transformer/knapsack/knapsack100_train_64000.jsonl
+cat ~/local_db/lstm_transformer/knapsack/knapsack100_val_10000.part{00..01}.jsonl > ~/local_db/lstm_transformer/knapsack/knapsack100_val_10000.jsonl
+cat ~/local_db/lstm_transformer/knapsack/knapsack100_test_10000.part{00..01}.jsonl > ~/local_db/lstm_transformer/knapsack/knapsack100_test_10000.jsonl
 
-cat ~/local_db/lstm_transformer/tsp/tsp50_seed1234.part{00..07}.jsonl > ~/local_db/lstm_transformer/tsp/tsp50_seed1234.jsonl
-cat ~/local_db/lstm_transformer/tsp/tsp50_val_seed4321.part{00..01}.jsonl > ~/local_db/lstm_transformer/tsp/tsp50_val_seed4321.jsonl
-cat ~/local_db/lstm_transformer/tsp/tsp50_test_seed9999.part{00..01}.jsonl > ~/local_db/lstm_transformer/tsp/tsp50_test_seed9999.jsonl
+cat ~/local_db/lstm_transformer/tsp/tsp50_train_64000.part{00..07}.jsonl > ~/local_db/lstm_transformer/tsp/tsp50_train_64000.jsonl
+cat ~/local_db/lstm_transformer/tsp/tsp50_val_10000.part{00..01}.jsonl > ~/local_db/lstm_transformer/tsp/tsp50_val_10000.jsonl
+cat ~/local_db/lstm_transformer/tsp/tsp50_test_10000.part{00..01}.jsonl > ~/local_db/lstm_transformer/tsp/tsp50_test_10000.jsonl
 
-cat ~/local_db/lstm_transformer/cvrp/cvrp50_seed1234.part{00..07}.jsonl > ~/local_db/lstm_transformer/cvrp/cvrp50_seed1234.jsonl
-cat ~/local_db/lstm_transformer/cvrp/cvrp50_val_seed4321.part{00..01}.jsonl > ~/local_db/lstm_transformer/cvrp/cvrp50_val_seed4321.jsonl
-cat ~/local_db/lstm_transformer/cvrp/cvrp50_test_seed9999.part{00..01}.jsonl > ~/local_db/lstm_transformer/cvrp/cvrp50_test_seed9999.jsonl
+cat ~/local_db/lstm_transformer/cvrp/cvrp50_train_64000.part{00..07}.jsonl > ~/local_db/lstm_transformer/cvrp/cvrp50_train_64000.jsonl
+cat ~/local_db/lstm_transformer/cvrp/cvrp50_val_10000.part{00..01}.jsonl > ~/local_db/lstm_transformer/cvrp/cvrp50_val_10000.jsonl
+cat ~/local_db/lstm_transformer/cvrp/cvrp50_test_10000.part{00..01}.jsonl > ~/local_db/lstm_transformer/cvrp/cvrp50_test_10000.jsonl
 
-cat ~/local_db/lstm_transformer/mis/mis100_p015_seed1234.part{00..07}.jsonl > ~/local_db/lstm_transformer/mis/mis100_p015_seed1234.jsonl
-cat ~/local_db/lstm_transformer/mis/mis100_p015_val_seed4321.part{00..01}.jsonl > ~/local_db/lstm_transformer/mis/mis100_p015_val_seed4321.jsonl
-cat ~/local_db/lstm_transformer/mis/mis100_p015_test_seed9999.part{00..01}.jsonl > ~/local_db/lstm_transformer/mis/mis100_p015_test_seed9999.jsonl
+cat ~/local_db/lstm_transformer/mis/mis100_p015_train_64000.part{00..07}.jsonl > ~/local_db/lstm_transformer/mis/mis100_p015_train_64000.jsonl
+cat ~/local_db/lstm_transformer/mis/mis100_p015_val_10000.part{00..01}.jsonl > ~/local_db/lstm_transformer/mis/mis100_p015_val_10000.jsonl
+cat ~/local_db/lstm_transformer/mis/mis100_p015_test_10000.part{00..01}.jsonl > ~/local_db/lstm_transformer/mis/mis100_p015_test_10000.jsonl
 
-cat ~/local_db/lstm_transformer/max_clique/max_clique100_p050_seed1234.part{00..07}.jsonl > ~/local_db/lstm_transformer/max_clique/max_clique100_p050_seed1234.jsonl
-cat ~/local_db/lstm_transformer/max_clique/max_clique100_p050_val_seed4321.part{00..01}.jsonl > ~/local_db/lstm_transformer/max_clique/max_clique100_p050_val_seed4321.jsonl
-cat ~/local_db/lstm_transformer/max_clique/max_clique100_p050_test_seed9999.part{00..01}.jsonl > ~/local_db/lstm_transformer/max_clique/max_clique100_p050_test_seed9999.jsonl
+cat ~/local_db/lstm_transformer/max_clique/max_clique100_p050_train_64000.part{00..07}.jsonl > ~/local_db/lstm_transformer/max_clique/max_clique100_p050_train_64000.jsonl
+cat ~/local_db/lstm_transformer/max_clique/max_clique100_p050_val_10000.part{00..01}.jsonl > ~/local_db/lstm_transformer/max_clique/max_clique100_p050_val_10000.jsonl
+cat ~/local_db/lstm_transformer/max_clique/max_clique100_p050_test_10000.part{00..01}.jsonl > ~/local_db/lstm_transformer/max_clique/max_clique100_p050_test_10000.jsonl
 
-cat ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_seed1234.part{00..07}.jsonl > ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_seed1234.jsonl
-cat ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_val_seed4321.part{00..01}.jsonl > ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_val_seed4321.jsonl
-cat ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_test_seed9999.part{00..01}.jsonl > ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_test_seed9999.jsonl
+cat ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_train_64000.part{00..07}.jsonl > ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_train_64000.jsonl
+cat ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_val_10000.part{00..01}.jsonl > ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_val_10000.jsonl
+cat ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_test_10000.part{00..01}.jsonl > ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_test_10000.jsonl
 
-cat ~/local_db/lstm_transformer/orienteering/orienteering50_seed1234.part{00..07}.jsonl > ~/local_db/lstm_transformer/orienteering/orienteering50_seed1234.jsonl
-cat ~/local_db/lstm_transformer/orienteering/orienteering50_val_seed4321.part{00..01}.jsonl > ~/local_db/lstm_transformer/orienteering/orienteering50_val_seed4321.jsonl
-cat ~/local_db/lstm_transformer/orienteering/orienteering50_test_seed9999.part{00..01}.jsonl > ~/local_db/lstm_transformer/orienteering/orienteering50_test_seed9999.jsonl
+cat ~/local_db/lstm_transformer/orienteering/orienteering50_train_64000.part{00..07}.jsonl > ~/local_db/lstm_transformer/orienteering/orienteering50_train_64000.jsonl
+cat ~/local_db/lstm_transformer/orienteering/orienteering50_val_10000.part{00..01}.jsonl > ~/local_db/lstm_transformer/orienteering/orienteering50_val_10000.jsonl
+cat ~/local_db/lstm_transformer/orienteering/orienteering50_test_10000.part{00..01}.jsonl > ~/local_db/lstm_transformer/orienteering/orienteering50_test_10000.jsonl
 ```
 
 Optional cleanup:
@@ -84,70 +84,70 @@ rm ~/local_db/lstm_transformer/*/*.part*.jsonl
 
 ## Knapsack
 
-### Train (`knapsack100_seed1234.jsonl`)
+### Train (`knapsack100_train_64000.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 0 --num-items 100 --seed 1234 --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_seed1234.part00.jsonl &
-uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 8000 --num-items 100 --seed 1234 --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_seed1234.part01.jsonl &
-uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 16000 --num-items 100 --seed 1234 --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_seed1234.part02.jsonl &
-uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 24000 --num-items 100 --seed 1234 --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_seed1234.part03.jsonl &
-uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 32000 --num-items 100 --seed 1234 --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_seed1234.part04.jsonl &
-uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 40000 --num-items 100 --seed 1234 --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_seed1234.part05.jsonl &
-uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 48000 --num-items 100 --seed 1234 --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_seed1234.part06.jsonl &
-uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 56000 --num-items 100 --seed 1234 --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_seed1234.part07.jsonl &
+uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 0 --num-items 100 --seed 1234 --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_train_64000.part00.jsonl &
+uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 8000 --num-items 100 --seed 1234 --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_train_64000.part01.jsonl &
+uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 16000 --num-items 100 --seed 1234 --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_train_64000.part02.jsonl &
+uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 24000 --num-items 100 --seed 1234 --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_train_64000.part03.jsonl &
+uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 32000 --num-items 100 --seed 1234 --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_train_64000.part04.jsonl &
+uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 40000 --num-items 100 --seed 1234 --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_train_64000.part05.jsonl &
+uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 48000 --num-items 100 --seed 1234 --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_train_64000.part06.jsonl &
+uv run python -m src.generate_data.KNAPSACK.generate --num-instances 8000 --start-index 56000 --num-items 100 --seed 1234 --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_train_64000.part07.jsonl &
 wait
 echo "Knapsack train chunks finished."
 ```
 
-### Validation (`knapsack100_val_seed4321.jsonl`)
+### Validation (`knapsack100_val_10000.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.KNAPSACK.generate --num-instances 5000 --start-index 0 --num-items 100 --seed 4321 --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_val_seed4321.part00.jsonl &
-uv run python -m src.generate_data.KNAPSACK.generate --num-instances 5000 --start-index 5000 --num-items 100 --seed 4321 --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_val_seed4321.part01.jsonl &
+uv run python -m src.generate_data.KNAPSACK.generate --num-instances 5000 --start-index 0 --num-items 100 --seed 4321 --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_val_10000.part00.jsonl &
+uv run python -m src.generate_data.KNAPSACK.generate --num-instances 5000 --start-index 5000 --num-items 100 --seed 4321 --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_val_10000.part01.jsonl &
 wait
 echo "Knapsack validation chunks finished."
 ```
 
-### Test (`knapsack100_test_seed9999.jsonl`)
+### Test (`knapsack100_test_10000.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.KNAPSACK.generate --num-instances 5000 --start-index 0 --num-items 100 --seed 9999 --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_test_seed9999.part00.jsonl &
-uv run python -m src.generate_data.KNAPSACK.generate --num-instances 5000 --start-index 5000 --num-items 100 --seed 9999 --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_test_seed9999.part01.jsonl &
+uv run python -m src.generate_data.KNAPSACK.generate --num-instances 5000 --start-index 0 --num-items 100 --seed 9999 --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_test_10000.part00.jsonl &
+uv run python -m src.generate_data.KNAPSACK.generate --num-instances 5000 --start-index 5000 --num-items 100 --seed 9999 --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_test_10000.part01.jsonl &
 wait
 echo "Knapsack test chunks finished."
 ```
 
 ## TSP
 
-### Train (`tsp50_seed1234.jsonl`)
+### Train (`tsp50_train_64000.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 0 --num-nodes 50 --seed 1234 --output-path ~/local_db/lstm_transformer/tsp/tsp50_seed1234.part00.jsonl &
-uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 8000 --num-nodes 50 --seed 1234 --output-path ~/local_db/lstm_transformer/tsp/tsp50_seed1234.part01.jsonl &
-uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 16000 --num-nodes 50 --seed 1234 --output-path ~/local_db/lstm_transformer/tsp/tsp50_seed1234.part02.jsonl &
-uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 24000 --num-nodes 50 --seed 1234 --output-path ~/local_db/lstm_transformer/tsp/tsp50_seed1234.part03.jsonl &
-uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 32000 --num-nodes 50 --seed 1234 --output-path ~/local_db/lstm_transformer/tsp/tsp50_seed1234.part04.jsonl &
-uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 40000 --num-nodes 50 --seed 1234 --output-path ~/local_db/lstm_transformer/tsp/tsp50_seed1234.part05.jsonl &
-uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 48000 --num-nodes 50 --seed 1234 --output-path ~/local_db/lstm_transformer/tsp/tsp50_seed1234.part06.jsonl &
-uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 56000 --num-nodes 50 --seed 1234 --output-path ~/local_db/lstm_transformer/tsp/tsp50_seed1234.part07.jsonl &
+uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 0 --num-nodes 50 --seed 1234 --output-path ~/local_db/lstm_transformer/tsp/tsp50_train_64000.part00.jsonl &
+uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 8000 --num-nodes 50 --seed 1234 --output-path ~/local_db/lstm_transformer/tsp/tsp50_train_64000.part01.jsonl &
+uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 16000 --num-nodes 50 --seed 1234 --output-path ~/local_db/lstm_transformer/tsp/tsp50_train_64000.part02.jsonl &
+uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 24000 --num-nodes 50 --seed 1234 --output-path ~/local_db/lstm_transformer/tsp/tsp50_train_64000.part03.jsonl &
+uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 32000 --num-nodes 50 --seed 1234 --output-path ~/local_db/lstm_transformer/tsp/tsp50_train_64000.part04.jsonl &
+uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 40000 --num-nodes 50 --seed 1234 --output-path ~/local_db/lstm_transformer/tsp/tsp50_train_64000.part05.jsonl &
+uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 48000 --num-nodes 50 --seed 1234 --output-path ~/local_db/lstm_transformer/tsp/tsp50_train_64000.part06.jsonl &
+uv run python -m src.generate_data.TSP.generate --num-instances 8000 --start-index 56000 --num-nodes 50 --seed 1234 --output-path ~/local_db/lstm_transformer/tsp/tsp50_train_64000.part07.jsonl &
 wait
 echo "TSP train chunks finished."
 ```
 
-### Validation (`tsp50_val_seed4321.jsonl`)
+### Validation (`tsp50_val_10000.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.TSP.generate --num-instances 5000 --start-index 0 --num-nodes 50 --seed 4321 --output-path ~/local_db/lstm_transformer/tsp/tsp50_val_seed4321.part00.jsonl &
-uv run python -m src.generate_data.TSP.generate --num-instances 5000 --start-index 5000 --num-nodes 50 --seed 4321 --output-path ~/local_db/lstm_transformer/tsp/tsp50_val_seed4321.part01.jsonl &
+uv run python -m src.generate_data.TSP.generate --num-instances 5000 --start-index 0 --num-nodes 50 --seed 4321 --output-path ~/local_db/lstm_transformer/tsp/tsp50_val_10000.part00.jsonl &
+uv run python -m src.generate_data.TSP.generate --num-instances 5000 --start-index 5000 --num-nodes 50 --seed 4321 --output-path ~/local_db/lstm_transformer/tsp/tsp50_val_10000.part01.jsonl &
 wait
 echo "TSP validation chunks finished."
 ```
 
-### Test (`tsp50_test_seed9999.jsonl`)
+### Test (`tsp50_test_10000.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.TSP.generate --num-instances 5000 --start-index 0 --num-nodes 50 --seed 9999 --output-path ~/local_db/lstm_transformer/tsp/tsp50_test_seed9999.part00.jsonl &
-uv run python -m src.generate_data.TSP.generate --num-instances 5000 --start-index 5000 --num-nodes 50 --seed 9999 --output-path ~/local_db/lstm_transformer/tsp/tsp50_test_seed9999.part01.jsonl &
+uv run python -m src.generate_data.TSP.generate --num-instances 5000 --start-index 0 --num-nodes 50 --seed 9999 --output-path ~/local_db/lstm_transformer/tsp/tsp50_test_10000.part00.jsonl &
+uv run python -m src.generate_data.TSP.generate --num-instances 5000 --start-index 5000 --num-nodes 50 --seed 9999 --output-path ~/local_db/lstm_transformer/tsp/tsp50_test_10000.part01.jsonl &
 wait
 echo "TSP test chunks finished."
 ```
@@ -156,70 +156,70 @@ echo "TSP test chunks finished."
 
 Solver time limit: **5 seconds** per instance.
 
-### Train (`cvrp50_seed1234.jsonl`)
+### Train (`cvrp50_train_64000.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 0 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_seed1234.part00.jsonl &
-uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 8000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_seed1234.part01.jsonl &
-uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 16000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_seed1234.part02.jsonl &
-uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 24000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_seed1234.part03.jsonl &
-uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 32000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_seed1234.part04.jsonl &
-uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 40000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_seed1234.part05.jsonl &
-uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 48000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_seed1234.part06.jsonl &
-uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 56000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_seed1234.part07.jsonl &
+uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 0 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_train_64000.part00.jsonl &
+uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 8000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_train_64000.part01.jsonl &
+uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 16000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_train_64000.part02.jsonl &
+uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 24000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_train_64000.part03.jsonl &
+uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 32000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_train_64000.part04.jsonl &
+uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 40000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_train_64000.part05.jsonl &
+uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 48000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_train_64000.part06.jsonl &
+uv run python -m src.generate_data.CVRP.generate --num-instances 8000 --start-index 56000 --num-customers 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_train_64000.part07.jsonl &
 wait
 echo "CVRP train chunks finished."
 ```
 
-### Validation (`cvrp50_val_seed4321.jsonl`)
+### Validation (`cvrp50_val_10000.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.CVRP.generate --num-instances 5000 --start-index 0 --num-customers 50 --seed 4321 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_val_seed4321.part00.jsonl &
-uv run python -m src.generate_data.CVRP.generate --num-instances 5000 --start-index 5000 --num-customers 50 --seed 4321 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_val_seed4321.part01.jsonl &
+uv run python -m src.generate_data.CVRP.generate --num-instances 5000 --start-index 0 --num-customers 50 --seed 4321 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_val_10000.part00.jsonl &
+uv run python -m src.generate_data.CVRP.generate --num-instances 5000 --start-index 5000 --num-customers 50 --seed 4321 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_val_10000.part01.jsonl &
 wait
 echo "CVRP validation chunks finished."
 ```
 
-### Test (`cvrp50_test_seed9999.jsonl`)
+### Test (`cvrp50_test_10000.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.CVRP.generate --num-instances 5000 --start-index 0 --num-customers 50 --seed 9999 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_test_seed9999.part00.jsonl &
-uv run python -m src.generate_data.CVRP.generate --num-instances 5000 --start-index 5000 --num-customers 50 --seed 9999 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_test_seed9999.part01.jsonl &
+uv run python -m src.generate_data.CVRP.generate --num-instances 5000 --start-index 0 --num-customers 50 --seed 9999 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_test_10000.part00.jsonl &
+uv run python -m src.generate_data.CVRP.generate --num-instances 5000 --start-index 5000 --num-customers 50 --seed 9999 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_test_10000.part01.jsonl &
 wait
 echo "CVRP test chunks finished."
 ```
 
 ## MIS
 
-### Train (`mis100_p015_seed1234.jsonl`)
+### Train (`mis100_p015_train_64000.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 0 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/mis/mis100_p015_seed1234.part00.jsonl &
-uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 8000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/mis/mis100_p015_seed1234.part01.jsonl &
-uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 16000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/mis/mis100_p015_seed1234.part02.jsonl &
-uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 24000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/mis/mis100_p015_seed1234.part03.jsonl &
-uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 32000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/mis/mis100_p015_seed1234.part04.jsonl &
-uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 40000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/mis/mis100_p015_seed1234.part05.jsonl &
-uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 48000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/mis/mis100_p015_seed1234.part06.jsonl &
-uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 56000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/mis/mis100_p015_seed1234.part07.jsonl &
+uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 0 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/mis/mis100_p015_train_64000.part00.jsonl &
+uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 8000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/mis/mis100_p015_train_64000.part01.jsonl &
+uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 16000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/mis/mis100_p015_train_64000.part02.jsonl &
+uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 24000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/mis/mis100_p015_train_64000.part03.jsonl &
+uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 32000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/mis/mis100_p015_train_64000.part04.jsonl &
+uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 40000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/mis/mis100_p015_train_64000.part05.jsonl &
+uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 48000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/mis/mis100_p015_train_64000.part06.jsonl &
+uv run python -m src.generate_data.MIS.generate --num-instances 8000 --start-index 56000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/mis/mis100_p015_train_64000.part07.jsonl &
 wait
 echo "MIS train chunks finished."
 ```
 
-### Validation (`mis100_p015_val_seed4321.jsonl`)
+### Validation (`mis100_p015_val_10000.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.MIS.generate --num-instances 5000 --start-index 0 --num-nodes 100 --edge-probability 0.15 --seed 4321 --output-path ~/local_db/lstm_transformer/mis/mis100_p015_val_seed4321.part00.jsonl &
-uv run python -m src.generate_data.MIS.generate --num-instances 5000 --start-index 5000 --num-nodes 100 --edge-probability 0.15 --seed 4321 --output-path ~/local_db/lstm_transformer/mis/mis100_p015_val_seed4321.part01.jsonl &
+uv run python -m src.generate_data.MIS.generate --num-instances 5000 --start-index 0 --num-nodes 100 --edge-probability 0.15 --seed 4321 --output-path ~/local_db/lstm_transformer/mis/mis100_p015_val_10000.part00.jsonl &
+uv run python -m src.generate_data.MIS.generate --num-instances 5000 --start-index 5000 --num-nodes 100 --edge-probability 0.15 --seed 4321 --output-path ~/local_db/lstm_transformer/mis/mis100_p015_val_10000.part01.jsonl &
 wait
 echo "MIS validation chunks finished."
 ```
 
-### Test (`mis100_p015_test_seed9999.jsonl`)
+### Test (`mis100_p015_test_10000.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.MIS.generate --num-instances 5000 --start-index 0 --num-nodes 100 --edge-probability 0.15 --seed 9999 --output-path ~/local_db/lstm_transformer/mis/mis100_p015_test_seed9999.part00.jsonl &
-uv run python -m src.generate_data.MIS.generate --num-instances 5000 --start-index 5000 --num-nodes 100 --edge-probability 0.15 --seed 9999 --output-path ~/local_db/lstm_transformer/mis/mis100_p015_test_seed9999.part01.jsonl &
+uv run python -m src.generate_data.MIS.generate --num-instances 5000 --start-index 0 --num-nodes 100 --edge-probability 0.15 --seed 9999 --output-path ~/local_db/lstm_transformer/mis/mis100_p015_test_10000.part00.jsonl &
+uv run python -m src.generate_data.MIS.generate --num-instances 5000 --start-index 5000 --num-nodes 100 --edge-probability 0.15 --seed 9999 --output-path ~/local_db/lstm_transformer/mis/mis100_p015_test_10000.part01.jsonl &
 wait
 echo "MIS test chunks finished."
 ```
@@ -228,70 +228,70 @@ echo "MIS test chunks finished."
 
 Solver time limit: **10 seconds** per instance.
 
-### Train (`max_clique100_p050_seed1234.jsonl`)
+### Train (`max_clique100_p050_train_64000.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 0 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_seed1234.part00.jsonl &
-uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 8000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_seed1234.part01.jsonl &
-uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 16000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_seed1234.part02.jsonl &
-uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 24000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_seed1234.part03.jsonl &
-uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 32000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_seed1234.part04.jsonl &
-uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 40000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_seed1234.part05.jsonl &
-uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 48000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_seed1234.part06.jsonl &
-uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 56000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_seed1234.part07.jsonl &
+uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 0 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_train_64000.part00.jsonl &
+uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 8000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_train_64000.part01.jsonl &
+uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 16000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_train_64000.part02.jsonl &
+uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 24000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_train_64000.part03.jsonl &
+uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 32000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_train_64000.part04.jsonl &
+uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 40000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_train_64000.part05.jsonl &
+uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 48000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_train_64000.part06.jsonl &
+uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 8000 --start-index 56000 --num-nodes 100 --edge-probability 0.5 --seed 1234 --solver-time-limit-sec 10 --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_train_64000.part07.jsonl &
 wait
 echo "Max Clique train chunks finished."
 ```
 
-### Validation (`max_clique100_p050_val_seed4321.jsonl`)
+### Validation (`max_clique100_p050_val_10000.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 5000 --start-index 0 --num-nodes 100 --edge-probability 0.5 --seed 4321 --solver-time-limit-sec 10 --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_val_seed4321.part00.jsonl &
-uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 5000 --start-index 5000 --num-nodes 100 --edge-probability 0.5 --seed 4321 --solver-time-limit-sec 10 --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_val_seed4321.part01.jsonl &
+uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 5000 --start-index 0 --num-nodes 100 --edge-probability 0.5 --seed 4321 --solver-time-limit-sec 10 --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_val_10000.part00.jsonl &
+uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 5000 --start-index 5000 --num-nodes 100 --edge-probability 0.5 --seed 4321 --solver-time-limit-sec 10 --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_val_10000.part01.jsonl &
 wait
 echo "Max Clique validation chunks finished."
 ```
 
-### Test (`max_clique100_p050_test_seed9999.jsonl`)
+### Test (`max_clique100_p050_test_10000.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 5000 --start-index 0 --num-nodes 100 --edge-probability 0.5 --seed 9999 --solver-time-limit-sec 10 --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_test_seed9999.part00.jsonl &
-uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 5000 --start-index 5000 --num-nodes 100 --edge-probability 0.5 --seed 9999 --solver-time-limit-sec 10 --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_test_seed9999.part01.jsonl &
+uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 5000 --start-index 0 --num-nodes 100 --edge-probability 0.5 --seed 9999 --solver-time-limit-sec 10 --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_test_10000.part00.jsonl &
+uv run python -m src.generate_data.MAX_CLIQUE.generate --num-instances 5000 --start-index 5000 --num-nodes 100 --edge-probability 0.5 --seed 9999 --solver-time-limit-sec 10 --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_test_10000.part01.jsonl &
 wait
 echo "Max Clique test chunks finished."
 ```
 
 ## Minimum Vertex Cover
 
-### Train (`vertex_cover100_p015_seed1234.jsonl`)
+### Train (`vertex_cover100_p015_train_64000.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 0 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_seed1234.part00.jsonl &
-uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 8000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_seed1234.part01.jsonl &
-uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 16000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_seed1234.part02.jsonl &
-uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 24000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_seed1234.part03.jsonl &
-uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 32000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_seed1234.part04.jsonl &
-uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 40000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_seed1234.part05.jsonl &
-uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 48000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_seed1234.part06.jsonl &
-uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 56000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_seed1234.part07.jsonl &
+uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 0 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_train_64000.part00.jsonl &
+uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 8000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_train_64000.part01.jsonl &
+uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 16000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_train_64000.part02.jsonl &
+uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 24000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_train_64000.part03.jsonl &
+uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 32000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_train_64000.part04.jsonl &
+uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 40000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_train_64000.part05.jsonl &
+uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 48000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_train_64000.part06.jsonl &
+uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 8000 --start-index 56000 --num-nodes 100 --edge-probability 0.15 --seed 1234 --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_train_64000.part07.jsonl &
 wait
 echo "Vertex Cover train chunks finished."
 ```
 
-### Validation (`vertex_cover100_p015_val_seed4321.jsonl`)
+### Validation (`vertex_cover100_p015_val_10000.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 5000 --start-index 0 --num-nodes 100 --edge-probability 0.15 --seed 4321 --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_val_seed4321.part00.jsonl &
-uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 5000 --start-index 5000 --num-nodes 100 --edge-probability 0.15 --seed 4321 --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_val_seed4321.part01.jsonl &
+uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 5000 --start-index 0 --num-nodes 100 --edge-probability 0.15 --seed 4321 --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_val_10000.part00.jsonl &
+uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 5000 --start-index 5000 --num-nodes 100 --edge-probability 0.15 --seed 4321 --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_val_10000.part01.jsonl &
 wait
 echo "Vertex Cover validation chunks finished."
 ```
 
-### Test (`vertex_cover100_p015_test_seed9999.jsonl`)
+### Test (`vertex_cover100_p015_test_10000.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 5000 --start-index 0 --num-nodes 100 --edge-probability 0.15 --seed 9999 --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_test_seed9999.part00.jsonl &
-uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 5000 --start-index 5000 --num-nodes 100 --edge-probability 0.15 --seed 9999 --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_test_seed9999.part01.jsonl &
+uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 5000 --start-index 0 --num-nodes 100 --edge-probability 0.15 --seed 9999 --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_test_10000.part00.jsonl &
+uv run python -m src.generate_data.VERTEX_COVER.generate --num-instances 5000 --start-index 5000 --num-nodes 100 --edge-probability 0.15 --seed 9999 --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_test_10000.part01.jsonl &
 wait
 echo "Vertex Cover test chunks finished."
 ```
@@ -300,35 +300,35 @@ echo "Vertex Cover test chunks finished."
 
 Solver time limit: **5 seconds** per instance.
 
-### Train (`orienteering50_seed1234.jsonl`)
+### Train (`orienteering50_train_64000.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 0 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_seed1234.part00.jsonl &
-uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 8000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_seed1234.part01.jsonl &
-uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 16000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_seed1234.part02.jsonl &
-uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 24000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_seed1234.part03.jsonl &
-uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 32000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_seed1234.part04.jsonl &
-uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 40000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_seed1234.part05.jsonl &
-uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 48000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_seed1234.part06.jsonl &
-uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 56000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_seed1234.part07.jsonl &
+uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 0 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_train_64000.part00.jsonl &
+uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 8000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_train_64000.part01.jsonl &
+uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 16000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_train_64000.part02.jsonl &
+uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 24000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_train_64000.part03.jsonl &
+uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 32000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_train_64000.part04.jsonl &
+uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 40000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_train_64000.part05.jsonl &
+uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 48000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_train_64000.part06.jsonl &
+uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 8000 --start-index 56000 --num-nodes 50 --seed 1234 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_train_64000.part07.jsonl &
 wait
 echo "Orienteering train chunks finished."
 ```
 
-### Validation (`orienteering50_val_seed4321.jsonl`)
+### Validation (`orienteering50_val_10000.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 5000 --start-index 0 --num-nodes 50 --seed 4321 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_val_seed4321.part00.jsonl &
-uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 5000 --start-index 5000 --num-nodes 50 --seed 4321 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_val_seed4321.part01.jsonl &
+uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 5000 --start-index 0 --num-nodes 50 --seed 4321 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_val_10000.part00.jsonl &
+uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 5000 --start-index 5000 --num-nodes 50 --seed 4321 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_val_10000.part01.jsonl &
 wait
 echo "Orienteering validation chunks finished."
 ```
 
-### Test (`orienteering50_test_seed9999.jsonl`)
+### Test (`orienteering50_test_10000.jsonl`)
 
 ```bash
-uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 5000 --start-index 0 --num-nodes 50 --seed 9999 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_test_seed9999.part00.jsonl &
-uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 5000 --start-index 5000 --num-nodes 50 --seed 9999 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_test_seed9999.part01.jsonl &
+uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 5000 --start-index 0 --num-nodes 50 --seed 9999 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_test_10000.part00.jsonl &
+uv run python -m src.generate_data.ORIENTEERING.generate --num-instances 5000 --start-index 5000 --num-nodes 50 --seed 9999 --solver-time-limit-sec 5 --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_test_10000.part01.jsonl &
 wait
 echo "Orienteering test chunks finished."
 ```
@@ -359,6 +359,6 @@ wc -l ~/local_db/lstm_transformer/tsp/*.jsonl \
 
 Expected counts:
 
-- `*_seed1234.jsonl` → `64000`
-- `*_val_seed4321.jsonl` → `10000`
-- `*_test_seed9999.jsonl` → `10000`
+- `*_train_64000.jsonl` → `64000`
+- `*_val_10000.jsonl` → `10000`
+- `*_test_10000.jsonl` → `10000`

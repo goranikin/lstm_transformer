@@ -74,9 +74,9 @@ uv run python -m src.experiments.run \
   encoder=attention \
   decoder=attention_pointer \
   mode=supervised \
-  data.train_path=data/tsp/tsp50_train_64000_seed1234.jsonl \
-  data.val_path=data/tsp/tsp50_val_10000_seed4321.jsonl \
-  data.test_path=data/tsp/tsp50_test_10000_seed9999.jsonl \
+  data.train_path=~/local_db/lstm_transformer/tsp/tsp50_train_64000.jsonl \
+  data.val_path=~/local_db/lstm_transformer/tsp/tsp50_val_10000.jsonl \
+  data.test_path=~/local_db/lstm_transformer/tsp/tsp50_test_10000.jsonl \
   data.target_algorithm=concorde \
   seed=1234 \
   trainer.epochs=100 \
@@ -92,9 +92,9 @@ uv run python -m src.experiments.run \
   encoder=attention \
   decoder=sigmoid_subset \
   mode=rl \
-  data.train_path=data/knapsack/knapsack100_train_64000_seed1234.jsonl \
-  data.val_path=data/knapsack/knapsack100_val_10000_seed4321.jsonl \
-  data.test_path=data/knapsack/knapsack100_test_10000_seed9999.jsonl \
+  data.train_path=~/local_db/lstm_transformer/knapsack/knapsack100_train_64000.jsonl \
+  data.val_path=~/local_db/lstm_transformer/knapsack/knapsack100_val_10000.jsonl \
+  data.test_path=~/local_db/lstm_transformer/knapsack/knapsack100_test_10000.jsonl \
   data.target_algorithm=dynamic_programming \
   seed=1234 \
   trainer.epochs=100 \
@@ -237,33 +237,33 @@ The matrix command expects this naming convention:
 ```text
 data/
   tsp/
-    tsp50_train_64000_seed1234.jsonl
-    tsp50_val_10000_seed4321.jsonl
-    tsp50_test_10000_seed9999.jsonl
+    tsp50_train_64000.jsonl
+    tsp50_val_10000.jsonl
+    tsp50_test_10000.jsonl
   cvrp/
-    cvrp50_train_64000_seed1234.jsonl
-    cvrp50_val_10000_seed4321.jsonl
-    cvrp50_test_10000_seed9999.jsonl
+    cvrp50_train_64000.jsonl
+    cvrp50_val_10000.jsonl
+    cvrp50_test_10000.jsonl
   orienteering/
-    orienteering50_train_64000_seed1234.jsonl
-    orienteering50_val_10000_seed4321.jsonl
-    orienteering50_test_10000_seed9999.jsonl
+    orienteering50_train_64000.jsonl
+    orienteering50_val_10000.jsonl
+    orienteering50_test_10000.jsonl
   knapsack/
-    knapsack100_train_64000_seed1234.jsonl
-    knapsack100_val_10000_seed4321.jsonl
-    knapsack100_test_10000_seed9999.jsonl
+    knapsack100_train_64000.jsonl
+    knapsack100_val_10000.jsonl
+    knapsack100_test_10000.jsonl
   mis/
-    mis100_p015_train_64000_seed1234.jsonl
-    mis100_p015_val_10000_seed4321.jsonl
-    mis100_p015_test_10000_seed9999.jsonl
+    mis100_p015_train_64000.jsonl
+    mis100_p015_val_10000.jsonl
+    mis100_p015_test_10000.jsonl
   max_clique/
-    max_clique100_p050_train_64000_seed1234.jsonl
-    max_clique100_p050_val_10000_seed4321.jsonl
-    max_clique100_p050_test_10000_seed9999.jsonl
+    max_clique100_p050_train_64000.jsonl
+    max_clique100_p050_val_10000.jsonl
+    max_clique100_p050_test_10000.jsonl
   vertex_cover/
-    vertex_cover100_p015_train_64000_seed1234.jsonl
-    vertex_cover100_p015_val_10000_seed4321.jsonl
-    vertex_cover100_p015_test_10000_seed9999.jsonl
+    vertex_cover100_p015_train_64000.jsonl
+    vertex_cover100_p015_val_10000.jsonl
+    vertex_cover100_p015_test_10000.jsonl
 ```
 
 Override data root when needed:
@@ -294,7 +294,7 @@ uv run python -m src.experiments.run \
   decoder=sigmoid_subset \
   mode=supervised \
   data.use_default_paths=false \
-  data.train_path=data/knapsack/knapsack50_smoke_seed1234.jsonl \
+  data.train_path=~/local_db/lstm_transformer/knapsack/knapsack50_smoke_seed1234.jsonl \
   data.target_algorithm=dynamic_programming \
   trainer.epochs=1 \
   trainer.steps_per_epoch=1 \

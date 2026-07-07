@@ -111,7 +111,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--output-path",
         type=str,
         default=None,
-        help="Output JSONL path (default: ~/local_db/lstm_transformer/<problem>/... from seed).",
+        help="Output JSONL path (default: <prefix>_<split>_<num-instances>.jsonl under the local data root).",
     )
     parser.add_argument("--min-prize", type=int, default=1)
     parser.add_argument("--max-prize", type=int, default=100)
@@ -133,7 +133,10 @@ def main() -> None:
         budget_ratio=args.budget_ratio,
         seed=args.seed,
         output_path=resolve_output_path(
-            "orienteering", seed=args.seed, output_path=args.output_path
+            "orienteering",
+            seed=args.seed,
+            num_instances=args.num_instances,
+            output_path=args.output_path,
         ),
         solver_time_limit_sec=args.solver_time_limit_sec,
     )

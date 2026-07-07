@@ -70,11 +70,28 @@ class DatasetStatus:
 
 
 def split_spec(name: str) -> SplitSpec:
-    if "_test_" in name:
-        return SplitSpec("test", VAL_TEST_TOTAL, VAL_TEST_CHUNK, VAL_TEST_PARTS)
-    if "_val_" in name:
-        return SplitSpec("val", VAL_TEST_TOTAL, VAL_TEST_CHUNK, VAL_TEST_PARTS)
-    return SplitSpec("train", TRAIN_TOTAL, TRAIN_CHUNK, TRAIN_PARTS)
+    base = name.split(".part", maxsplit=1)[0]
+    if "_test_" in base:
+        kind = "test"
+        default_total = VAL_TEST_TOTAL
+        default_chunk = VAL_TEST_CHUNK
+    elif "_val_" in base:
+        kind = "val"
+        default_total = VAL_TEST_TOTAL
+        default_chunk = VAL_TEST_CHUNK
+    else:
+        kind = "train"
+        default_total = TRAIN_TOTAL
+        default_chunk = TRAIN_CHUNK
+
+    total = default_total
+    for part in base.rsplit("_", maxsplit=1):
+        if part.isdigit():
+            total = int(part)
+            break
+
+    num_parts = max(1, (total + default_chunk - 1) // default_chunk)
+    return SplitSpec(kind, total, default_chunk, num_parts)
 
 
 def count_lines(path: Path) -> int:

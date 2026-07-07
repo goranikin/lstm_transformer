@@ -209,8 +209,8 @@ def normalize_record(
 def data_output_path(data_root: Path, problem: ProblemName, split_name: str) -> Path:
     return problem_dataset_path(
         problem,
-        seed=SPLIT_SEEDS[split_name],
         split=split_name,
+        instances=TARGET_COUNTS[split_name],
         data_root=data_root,
     )
 
@@ -604,7 +604,7 @@ def main() -> None:
             "with src/experiments/run.py.\n\n"
             "By default, reads monolithic JSONL files from local_db/raw and "
             "data_public_84k, then writes normalized files under the local data root "
-            "(e.g. cvrp/cvrp50_seed1234.jsonl). Use --input-format txt for "
+            "(e.g. cvrp/cvrp50_train_64000.jsonl). Use --input-format txt for "
             "legacy ML4CO .txt sources.\n\n"
             "Example:\n"
             "  uv run python -m src.generate_data.ml4co_to_jsonl\n\n"

@@ -35,41 +35,37 @@ def split_for_seed(seed: int) -> str:
 def problem_dataset_path(
     problem: ProblemName,
     *,
-    seed: int,
-    split: str | None = None,
+    split: str,
+    instances: int,
     data_root: str | Path | None = None,
 ) -> Path:
     root = resolve_data_root(data_root)
     directory = PROBLEM_PATH_DIR[problem]
     prefix = PROBLEM_FILE_PREFIX[problem]
-    resolved_split = split if split is not None else split_for_seed(seed)
-    if resolved_split == "train":
-        filename = f"{prefix}_seed{seed}.jsonl"
-    else:
-        filename = f"{prefix}_{resolved_split}_seed{seed}.jsonl"
+    filename = f"{prefix}_{split}_{instances}.jsonl"
     return root / directory / filename
 
 
 def problem_split_paths(
     problem: ProblemName,
     *,
-    train_seed: int,
-    val_seed: int,
-    test_seed: int,
+    train_instances: int,
+    val_instances: int,
+    test_instances: int,
     data_root: str | Path | None = None,
 ) -> dict[str, str]:
     return {
         split: str(
             problem_dataset_path(
                 problem,
-                seed=seed,
                 split=split,
+                instances=instances,
                 data_root=data_root,
             )
         )
-        for split, seed in (
-            ("train", train_seed),
-            ("val", val_seed),
-            ("test", test_seed),
+        for split, instances in (
+            ("train", train_instances),
+            ("val", val_instances),
+            ("test", test_instances),
         )
     }

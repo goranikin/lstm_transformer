@@ -71,7 +71,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--output-path",
         type=str,
         default=None,
-        help="Output JSONL path (default: ~/local_db/lstm_transformer/<problem>/... from seed).",
+        help="Output JSONL path (default: <prefix>_<split>_<num-instances>.jsonl under the local data root).",
     )
     parser.add_argument("--solver-time-limit-sec", type=float, default=None)
     return parser
@@ -85,7 +85,12 @@ def main() -> None:
         num_nodes=args.num_nodes,
         edge_probability=args.edge_probability,
         seed=args.seed,
-        output_path=resolve_output_path("mis", seed=args.seed, output_path=args.output_path),
+        output_path=resolve_output_path(
+            "mis",
+            seed=args.seed,
+            num_instances=args.num_instances,
+            output_path=args.output_path,
+        ),
         solver_time_limit_sec=args.solver_time_limit_sec,
     )
     written = generate_mis_dataset(config)

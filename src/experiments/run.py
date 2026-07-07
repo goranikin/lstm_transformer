@@ -206,19 +206,19 @@ def resolve_data_path(cfg: DictConfig, *, split: str) -> str | None:
             raise ValueError("data.train_path is required when use_default_paths=false")
         return None
     if split == "train":
-        seed = int(cfg.scale.train.seed)
+        instances = int(cfg.scale.train.instances)
     elif split == "val":
-        seed = int(cfg.scale.validation.seed)
+        instances = int(cfg.scale.validation.instances)
     elif split == "test":
-        seed = int(cfg.scale.test.seed)
+        instances = int(cfg.scale.test.instances)
     else:
         raise ValueError(f"Unsupported split: {split}")
     problem = cast(ProblemName, str(cfg.problem))
     return str(
         problem_dataset_path(
             problem,
-            seed=seed,
             split=split,
+            instances=instances,
             data_root=cfg.data.root,
         )
     )

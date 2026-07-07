@@ -70,10 +70,17 @@ def resolve_output_path(
     problem: ProblemName,
     *,
     seed: int,
+    num_instances: int,
     output_path: str | None,
+    split: str | None = None,
 ) -> str:
     if output_path is not None:
         return output_path
+    resolved_split = split if split is not None else split_for_seed(seed)
     return str(
-        problem_dataset_path(problem, seed=seed, split=split_for_seed(seed))
+        problem_dataset_path(
+            problem,
+            split=resolved_split,
+            instances=num_instances,
+        )
     )

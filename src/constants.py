@@ -49,11 +49,15 @@ AUTOREGRESSIVE_DECODERS = frozenset(
 )
 
 MINIMIZATION_PROBLEMS = frozenset({"tsp", "cvrp", "vertex_cover"})
-MAXIMIZATION_PROBLEMS = frozenset(
-    {"orienteering", "knapsack", "mis", "max_clique"}
-)
+MAXIMIZATION_PROBLEMS = frozenset({"orienteering", "knapsack", "mis", "max_clique"})
 
 DEFAULT_SEEDS = (1234, 4321, 9999)
+
+DEFAULT_SPLIT_INSTANCES: dict[str, int] = {
+    "train": 64_000,
+    "val": 10_000,
+    "test": 10_000,
+}
 
 DEFAULT_TARGET_ALGORITHM: dict[ProblemName, str] = {
     "tsp": "concorde",

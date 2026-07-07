@@ -14,8 +14,8 @@ Per-instance seeds are `base_seed + index`, so each split is reproducible and
 disjoint.
 
 Output files are written under `~/local_db/lstm_transformer/<problem>/`. Parent directories are
-created automatically. Omit `--output-path` to use the default path for the given
-`--seed` (1234 → train, 4321 → val, 9999 → test).
+created automatically. Omit `--output-path` to use the default
+`<prefix>_<split>_<num-instances>.jsonl` name (split is inferred from `--seed`).
 
 ## Solvers
 
@@ -46,13 +46,13 @@ For Concorde only, use `uv sync --extra concorde`; for Gurobi only, use
 
 | Problem | Train | Validation | Test |
 |---------|-------|------------|------|
-| TSP | `~/local_db/lstm_transformer/tsp/tsp50_seed1234.jsonl` | `~/local_db/lstm_transformer/tsp/tsp50_val_seed4321.jsonl` | `~/local_db/lstm_transformer/tsp/tsp50_test_seed9999.jsonl` |
-| CVRP | `~/local_db/lstm_transformer/cvrp/cvrp50_seed1234.jsonl` | `~/local_db/lstm_transformer/cvrp/cvrp50_val_seed4321.jsonl` | `~/local_db/lstm_transformer/cvrp/cvrp50_test_seed9999.jsonl` |
-| MIS | `~/local_db/lstm_transformer/mis/mis100_p015_seed1234.jsonl` | `~/local_db/lstm_transformer/mis/mis100_p015_val_seed4321.jsonl` | `~/local_db/lstm_transformer/mis/mis100_p015_test_seed9999.jsonl` |
-| Knapsack | `~/local_db/lstm_transformer/knapsack/knapsack100_seed1234.jsonl` | `~/local_db/lstm_transformer/knapsack/knapsack100_val_seed4321.jsonl` | `~/local_db/lstm_transformer/knapsack/knapsack100_test_seed9999.jsonl` |
-| Maximum Clique | `~/local_db/lstm_transformer/max_clique/max_clique100_p050_seed1234.jsonl` | `~/local_db/lstm_transformer/max_clique/max_clique100_p050_val_seed4321.jsonl` | `~/local_db/lstm_transformer/max_clique/max_clique100_p050_test_seed9999.jsonl` |
-| Minimum Vertex Cover | `~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_seed1234.jsonl` | `~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_val_seed4321.jsonl` | `~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_test_seed9999.jsonl` |
-| Orienteering | `~/local_db/lstm_transformer/orienteering/orienteering50_seed1234.jsonl` | `~/local_db/lstm_transformer/orienteering/orienteering50_val_seed4321.jsonl` | `~/local_db/lstm_transformer/orienteering/orienteering50_test_seed9999.jsonl` |
+| TSP | `~/local_db/lstm_transformer/tsp/tsp50_train_64000.jsonl` | `~/local_db/lstm_transformer/tsp/tsp50_val_10000.jsonl` | `~/local_db/lstm_transformer/tsp/tsp50_test_10000.jsonl` |
+| CVRP | `~/local_db/lstm_transformer/cvrp/cvrp50_train_64000.jsonl` | `~/local_db/lstm_transformer/cvrp/cvrp50_val_10000.jsonl` | `~/local_db/lstm_transformer/cvrp/cvrp50_test_10000.jsonl` |
+| MIS | `~/local_db/lstm_transformer/mis/mis100_p015_train_64000.jsonl` | `~/local_db/lstm_transformer/mis/mis100_p015_val_10000.jsonl` | `~/local_db/lstm_transformer/mis/mis100_p015_test_10000.jsonl` |
+| Knapsack | `~/local_db/lstm_transformer/knapsack/knapsack100_train_64000.jsonl` | `~/local_db/lstm_transformer/knapsack/knapsack100_val_10000.jsonl` | `~/local_db/lstm_transformer/knapsack/knapsack100_test_10000.jsonl` |
+| Maximum Clique | `~/local_db/lstm_transformer/max_clique/max_clique100_p050_train_64000.jsonl` | `~/local_db/lstm_transformer/max_clique/max_clique100_p050_val_10000.jsonl` | `~/local_db/lstm_transformer/max_clique/max_clique100_p050_test_10000.jsonl` |
+| Minimum Vertex Cover | `~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_train_64000.jsonl` | `~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_val_10000.jsonl` | `~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_test_10000.jsonl` |
+| Orienteering | `~/local_db/lstm_transformer/orienteering/orienteering50_train_64000.jsonl` | `~/local_db/lstm_transformer/orienteering/orienteering50_val_10000.jsonl` | `~/local_db/lstm_transformer/orienteering/orienteering50_test_10000.jsonl` |
 
 ## TSP
 
@@ -63,17 +63,17 @@ uv run python -m src.generate_data.TSP.generate \
   --num-instances 64000 \
   --num-nodes 50 \
   --seed 1234 \
-  --output-path ~/local_db/lstm_transformer/tsp/tsp50_seed1234.jsonl && \
+  --output-path ~/local_db/lstm_transformer/tsp/tsp50_train_64000.jsonl && \
 uv run python -m src.generate_data.TSP.generate \
   --num-instances 10000 \
   --num-nodes 50 \
   --seed 4321 \
-  --output-path ~/local_db/lstm_transformer/tsp/tsp50_val_seed4321.jsonl && \
+  --output-path ~/local_db/lstm_transformer/tsp/tsp50_val_10000.jsonl && \
 uv run python -m src.generate_data.TSP.generate \
   --num-instances 10000 \
   --num-nodes 50 \
   --seed 9999 \
-  --output-path ~/local_db/lstm_transformer/tsp/tsp50_test_seed9999.jsonl
+  --output-path ~/local_db/lstm_transformer/tsp/tsp50_test_10000.jsonl
 ```
 
 ## CVRP
@@ -85,17 +85,17 @@ uv run python -m src.generate_data.CVRP.generate \
   --num-instances 64000 \
   --num-customers 50 \
   --seed 1234 \
-  --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_seed1234.jsonl && \
+  --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_train_64000.jsonl && \
 uv run python -m src.generate_data.CVRP.generate \
   --num-instances 10000 \
   --num-customers 50 \
   --seed 4321 \
-  --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_val_seed4321.jsonl && \
+  --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_val_10000.jsonl && \
 uv run python -m src.generate_data.CVRP.generate \
   --num-instances 10000 \
   --num-customers 50 \
   --seed 9999 \
-  --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_test_seed9999.jsonl
+  --output-path ~/local_db/lstm_transformer/cvrp/cvrp50_test_10000.jsonl
 ```
 
 ## MIS
@@ -108,19 +108,19 @@ uv run python -m src.generate_data.MIS.generate \
   --num-nodes 100 \
   --edge-probability 0.15 \
   --seed 1234 \
-  --output-path ~/local_db/lstm_transformer/mis/mis100_p015_seed1234.jsonl && \
+  --output-path ~/local_db/lstm_transformer/mis/mis100_p015_train_64000.jsonl && \
 uv run python -m src.generate_data.MIS.generate \
   --num-instances 10000 \
   --num-nodes 100 \
   --edge-probability 0.15 \
   --seed 4321 \
-  --output-path ~/local_db/lstm_transformer/mis/mis100_p015_val_seed4321.jsonl && \
+  --output-path ~/local_db/lstm_transformer/mis/mis100_p015_val_10000.jsonl && \
 uv run python -m src.generate_data.MIS.generate \
   --num-instances 10000 \
   --num-nodes 100 \
   --edge-probability 0.15 \
   --seed 9999 \
-  --output-path ~/local_db/lstm_transformer/mis/mis100_p015_test_seed9999.jsonl
+  --output-path ~/local_db/lstm_transformer/mis/mis100_p015_test_10000.jsonl
 ```
 
 ## Knapsack
@@ -132,17 +132,17 @@ uv run python -m src.generate_data.KNAPSACK.generate \
   --num-instances 64000 \
   --num-items 100 \
   --seed 1234 \
-  --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_seed1234.jsonl && \
+  --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_train_64000.jsonl && \
 uv run python -m src.generate_data.KNAPSACK.generate \
   --num-instances 10000 \
   --num-items 100 \
   --seed 4321 \
-  --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_val_seed4321.jsonl && \
+  --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_val_10000.jsonl && \
 uv run python -m src.generate_data.KNAPSACK.generate \
   --num-instances 10000 \
   --num-items 100 \
   --seed 9999 \
-  --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_test_seed9999.jsonl
+  --output-path ~/local_db/lstm_transformer/knapsack/knapsack100_test_10000.jsonl
 ```
 
 ## Maximum Clique
@@ -155,19 +155,19 @@ uv run python -m src.generate_data.MAX_CLIQUE.generate \
   --num-nodes 100 \
   --edge-probability 0.5 \
   --seed 1234 \
-  --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_seed1234.jsonl && \
+  --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_train_64000.jsonl && \
 uv run python -m src.generate_data.MAX_CLIQUE.generate \
   --num-instances 10000 \
   --num-nodes 100 \
   --edge-probability 0.5 \
   --seed 4321 \
-  --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_val_seed4321.jsonl && \
+  --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_val_10000.jsonl && \
 uv run python -m src.generate_data.MAX_CLIQUE.generate \
   --num-instances 10000 \
   --num-nodes 100 \
   --edge-probability 0.5 \
   --seed 9999 \
-  --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_test_seed9999.jsonl
+  --output-path ~/local_db/lstm_transformer/max_clique/max_clique100_p050_test_10000.jsonl
 ```
 
 ## Minimum Vertex Cover
@@ -180,19 +180,19 @@ uv run python -m src.generate_data.VERTEX_COVER.generate \
   --num-nodes 100 \
   --edge-probability 0.15 \
   --seed 1234 \
-  --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_seed1234.jsonl && \
+  --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_train_64000.jsonl && \
 uv run python -m src.generate_data.VERTEX_COVER.generate \
   --num-instances 10000 \
   --num-nodes 100 \
   --edge-probability 0.15 \
   --seed 4321 \
-  --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_val_seed4321.jsonl && \
+  --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_val_10000.jsonl && \
 uv run python -m src.generate_data.VERTEX_COVER.generate \
   --num-instances 10000 \
   --num-nodes 100 \
   --edge-probability 0.15 \
   --seed 9999 \
-  --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_test_seed9999.jsonl
+  --output-path ~/local_db/lstm_transformer/vertex_cover/vertex_cover100_p015_test_10000.jsonl
 ```
 
 ## Orienteering
@@ -204,17 +204,17 @@ uv run python -m src.generate_data.ORIENTEERING.generate \
   --num-instances 64000 \
   --num-nodes 50 \
   --seed 1234 \
-  --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_seed1234.jsonl && \
+  --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_train_64000.jsonl && \
 uv run python -m src.generate_data.ORIENTEERING.generate \
   --num-instances 10000 \
   --num-nodes 50 \
   --seed 4321 \
-  --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_val_seed4321.jsonl && \
+  --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_val_10000.jsonl && \
 uv run python -m src.generate_data.ORIENTEERING.generate \
   --num-instances 10000 \
   --num-nodes 50 \
   --seed 9999 \
-  --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_test_seed9999.jsonl
+  --output-path ~/local_db/lstm_transformer/orienteering/orienteering50_test_10000.jsonl
 ```
 
 ## Notes
@@ -229,7 +229,7 @@ uv run python -m src.generate_data.ORIENTEERING.generate \
 uv run python -m src.main.train \
   problem=tsp \
   mode=supervised \
-  paths.train=~/local_db/lstm_transformer/tsp/tsp50_seed1234.jsonl \
-  paths.val=~/local_db/lstm_transformer/tsp/tsp50_val_seed4321.jsonl \
+  paths.train=~/local_db/lstm_transformer/tsp/tsp50_train_64000.jsonl \
+  paths.val=~/local_db/lstm_transformer/tsp/tsp50_val_10000.jsonl \
   data.target_algorithm=concorde
 ```

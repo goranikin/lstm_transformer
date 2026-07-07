@@ -67,7 +67,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--output-path",
         type=str,
         default=None,
-        help="Output JSONL path (default: ~/local_db/lstm_transformer/<problem>/... from seed).",
+        help="Output JSONL path (default: <prefix>_<split>_<num-instances>.jsonl under the local data root).",
     )
     parser.add_argument("--concorde-executable", type=str, default=None)
     parser.add_argument("--solver-timeout-sec", type=float, default=None)
@@ -81,7 +81,12 @@ def main() -> None:
         start_index=args.start_index,
         num_nodes=args.num_nodes,
         seed=args.seed,
-        output_path=resolve_output_path("tsp", seed=args.seed, output_path=args.output_path),
+        output_path=resolve_output_path(
+            "tsp",
+            seed=args.seed,
+            num_instances=args.num_instances,
+            output_path=args.output_path,
+        ),
         concorde_executable=args.concorde_executable,
         solver_timeout_sec=args.solver_timeout_sec,
     )
