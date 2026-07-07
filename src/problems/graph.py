@@ -6,6 +6,18 @@ from src.core import ProblemState, SupervisedTarget
 from src.problems.base import Problem
 
 
+def valid_node_mask(batch: dict[str, Any]) -> torch.Tensor | None:
+    num_nodes = batch.get("num_nodes")
+    adjacency = batch.get("adjacency")
+    if not isinstance(num_nodes, torch.Tensor) or not isinstance(
+        adjacency, torch.Tensor
+    ):
+        return None
+    max_nodes = adjacency.size(1)
+    positions = torch.arange(max_nodes, device=adjacency.device).unsqueeze(0)
+    return positions < num_nodes.to(adjacency.device).unsqueeze(1)
+
+
 class GraphSubsetProblem(Problem):
     name = "mis"
     objective_sense = "max"
@@ -19,6 +31,10 @@ class GraphSubsetProblem(Problem):
         adjacency = self.require_tensor(batch, "adjacency")
         batch_size, node_count, _ = adjacency.shape
         device = adjacency.device
+        available = torch.ones(batch_size, node_count, dtype=torch.bool, device=device)
+        valid = valid_node_mask(batch)
+        if valid is not None:
+            available &= valid
         return ProblemState(
             batch=batch,
             selected_mask=torch.zeros(
@@ -27,11 +43,7 @@ class GraphSubsetProblem(Problem):
             done=torch.zeros(batch_size, dtype=torch.bool, device=device),
             prev_action=torch.full((batch_size,), -1, dtype=torch.long, device=device),
             first_action=torch.full((batch_size,), -1, dtype=torch.long, device=device),
-            aux={
-                "available": torch.ones(
-                    batch_size, node_count, dtype=torch.bool, device=device
-                )
-            },
+            aux={"available": available},
         )
 
     def get_mask(self, state: ProblemState) -> torch.Tensor:
@@ -100,8 +112,11 @@ class GraphSubsetProblem(Problem):
     def compute_objective(
         self, batch: dict[str, Any], solution: dict[str, torch.Tensor]
     ):
-        del batch
-        return solution["selected_mask"].float().sum(dim=1)
+        selected = solution["selected_mask"].float()
+        valid = valid_node_mask(batch)
+        if valid is not None:
+            selected = selected * valid.float()
+        return selected.sum(dim=1)
 
     def check_feasible(self, batch: dict[str, Any], solution: dict[str, torch.Tensor]):
         adjacency = self.require_tensor(batch, "adjacency").bool()

@@ -233,7 +233,12 @@ class ProblemDataset(Dataset):
         num_nodes = int(record["num_nodes"])
         adjacency = _edges_to_adjacency(num_nodes, record.get("edges", []))
         item = self._base_item(record)
-        item.update({"adjacency": torch.tensor(adjacency, dtype=self.dtype)})
+        item.update(
+            {
+                "adjacency": torch.tensor(adjacency, dtype=self.dtype),
+                "num_nodes": torch.tensor(num_nodes, dtype=torch.long),
+            }
+        )
         solution = self._solution(record)
         if solution is not None:
             selected = [int(node) for node in solution.get("nodes", [])]
@@ -275,8 +280,12 @@ def collate_problem_batch(items: list[dict[str, Any]]) -> dict[str, Any]:
     if not items:
         raise ValueError("Cannot collate an empty batch")
     keys = set().union(*(item.keys() for item in items))
+    num_nodes = _stack_num_nodes(items)
+    max_graph_nodes = _max_graph_nodes(items)
     batch: dict[str, Any] = {}
     for key in sorted(keys):
+        if key == "num_nodes":
+            continue
         values = [item.get(key) for item in items]
         present = [value for value in values if value is not None]
         if not present:
@@ -289,12 +298,29 @@ def collate_problem_batch(items: list[dict[str, Any]]) -> dict[str, Any]:
             tensors = [value for value in values if isinstance(value, torch.Tensor)]
             if _same_shape(tensors):
                 batch[key] = torch.stack(tensors)
-            elif tensors[0].dtype == torch.long and tensors[0].ndim == 1:
-                batch[key] = _pad_1d_long(tensors, pad_value=-1)
+            elif _is_square_adjacency(tensors):
+                batch[key] = _pad_square_2d(tensors, pad_value=0.0)
+            elif tensors[0].ndim == 1 and tensors[0].dtype == torch.long:
+                padded = _pad_1d_long(tensors, pad_value=-1)
+                if (
+                    key == "target_actions"
+                    and num_nodes is not None
+                    and max_graph_nodes is not None
+                ):
+                    padded = _remap_graph_stop_actions(
+                        padded,
+                        num_nodes,
+                        max_graph_nodes,
+                    )
+                batch[key] = padded
+            elif tensors[0].ndim == 1:
+                batch[key] = _pad_1d_float(tensors, pad_value=0.0)
             else:
                 raise ValueError(f"Cannot collate variable-shape tensor key {key!r}")
         else:
             batch[key] = values
+    if num_nodes is not None:
+        batch["num_nodes"] = num_nodes
     return batch
 
 
@@ -310,6 +336,78 @@ def _pad_1d_long(tensors: list[torch.Tensor], pad_value: int) -> torch.Tensor:
     for row, tensor in enumerate(tensors):
         padded[row, : tensor.numel()] = tensor.long()
     return padded
+
+
+def _pad_1d_float(tensors: list[torch.Tensor], pad_value: float) -> torch.Tensor:
+    max_len = max(int(tensor.numel()) for tensor in tensors)
+    padded = torch.full(
+        (len(tensors), max_len),
+        pad_value,
+        dtype=tensors[0].dtype,
+    )
+    for row, tensor in enumerate(tensors):
+        padded[row, : tensor.numel()] = tensor
+    return padded
+
+
+def _pad_square_2d(tensors: list[torch.Tensor], pad_value: float) -> torch.Tensor:
+    max_size = max(int(tensor.shape[0]) for tensor in tensors)
+    padded = torch.full(
+        (len(tensors), max_size, max_size),
+        pad_value,
+        dtype=tensors[0].dtype,
+    )
+    for row, tensor in enumerate(tensors):
+        size = int(tensor.shape[0])
+        padded[row, :size, :size] = tensor
+    return padded
+
+
+def _is_square_adjacency(tensors: list[torch.Tensor]) -> bool:
+    if not tensors:
+        return False
+    first = tensors[0]
+    if first.ndim != 2 or first.shape[0] != first.shape[1]:
+        return False
+    return all(
+        tensor.ndim == 2 and tensor.shape[0] == tensor.shape[1] for tensor in tensors
+    )
+
+
+def _stack_num_nodes(items: list[dict[str, Any]]) -> torch.Tensor | None:
+    values = [item.get("num_nodes") for item in items]
+    if not any(value is not None for value in values):
+        return None
+    if not all(isinstance(value, torch.Tensor) for value in values):
+        raise ValueError("Batch items with num_nodes must all provide it")
+    return torch.stack([value.long().reshape(()) for value in values])
+
+
+def _max_graph_nodes(items: list[dict[str, Any]]) -> int | None:
+    sizes = [
+        int(item["adjacency"].shape[0])
+        for item in items
+        if isinstance(item.get("adjacency"), torch.Tensor)
+    ]
+    if not sizes:
+        return None
+    return max(sizes)
+
+
+def _remap_graph_stop_actions(
+    actions: torch.Tensor,
+    num_nodes: torch.Tensor,
+    stop_index: int,
+) -> torch.Tensor:
+    remapped = actions.clone()
+    for row in range(actions.size(0)):
+        original_stop = int(num_nodes[row].item())
+        remapped[row] = torch.where(
+            remapped[row] == original_stop,
+            torch.tensor(stop_index, dtype=torch.long),
+            remapped[row],
+        )
+    return remapped
 
 
 def _canonical_problem(raw: Any) -> str:
