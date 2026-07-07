@@ -11,6 +11,7 @@ from src.constants import (
     DECODER_KINDS,
     DEFAULT_SEEDS,
     DEFAULT_TARGET_ALGORITHM,
+    GRAPH_PROBLEMS,
     MATRIX_ENCODERS,
     PROBLEM_NAMES,
     ProblemName,
@@ -72,6 +73,8 @@ def run_from_config(cfg: DictConfig) -> list[list[str]]:
         steps_per_epoch=none_or_int(cfg.trainer.steps_per_epoch),
         batch_size=int(cfg.data.batch_size),
         eval_batch_size=int(cfg.data.eval_batch_size or cfg.data.batch_size),
+        graph_batch_size=none_or_int(cfg.data.get("graph_batch_size")),
+        graph_eval_batch_size=none_or_int(cfg.data.get("graph_eval_batch_size")),
         learning_rate=float(cfg.trainer.learning_rate),
         d_model=int(cfg.model.d_model),
         d_ff=int(cfg.model.d_ff),
@@ -118,6 +121,8 @@ def build_commands(
     steps_per_epoch: int | None,
     batch_size: int,
     eval_batch_size: int,
+    graph_batch_size: int | None,
+    graph_eval_batch_size: int | None,
     learning_rate: float,
     d_model: int,
     d_ff: int,
@@ -151,6 +156,13 @@ def build_commands(
                             f"{output_root}/seed_{seed}/{mode}/"
                             f"{problem}/{encoder}/{decoder}"
                         )
+                        train_batch_size, eval_batch = resolve_batch_sizes(
+                            problem,
+                            batch_size=batch_size,
+                            eval_batch_size=eval_batch_size,
+                            graph_batch_size=graph_batch_size,
+                            graph_eval_batch_size=graph_eval_batch_size,
+                        )
                         command = [
                             "uv",
                             "run",
@@ -168,8 +180,8 @@ def build_commands(
                             f"data.target_algorithm={DEFAULT_TARGET_ALGORITHM[problem]}",
                             f"seed={seed}",
                             f"trainer.epochs={epochs}",
-                            f"data.batch_size={batch_size}",
-                            f"data.eval_batch_size={eval_batch_size}",
+                            f"data.batch_size={train_batch_size}",
+                            f"data.eval_batch_size={eval_batch}",
                             f"trainer.learning_rate={learning_rate}",
                             f"model.num_layers={num_layers}",
                             f"model.num_heads={num_heads}",
@@ -191,6 +203,26 @@ def build_commands(
                             )
                         commands.append(command)
     return commands
+
+
+def resolve_batch_sizes(
+    problem: ProblemName,
+    *,
+    batch_size: int,
+    eval_batch_size: int,
+    graph_batch_size: int | None,
+    graph_eval_batch_size: int | None,
+) -> tuple[int, int]:
+    if problem not in GRAPH_PROBLEMS:
+        return batch_size, eval_batch_size
+    train_batch = graph_batch_size if graph_batch_size is not None else batch_size
+    if graph_eval_batch_size is not None:
+        eval_batch = graph_eval_batch_size
+    elif graph_batch_size is not None:
+        eval_batch = graph_batch_size
+    else:
+        eval_batch = eval_batch_size
+    return train_batch, eval_batch
 
 
 def none_or_int(value: Any) -> int | None:

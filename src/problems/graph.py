@@ -231,15 +231,13 @@ class VertexCoverProblem(GraphSubsetProblem):
 
     def make_state(self, batch: dict[str, Any]) -> ProblemState:
         state = super().make_state(batch)
-        adjacency = self.require_tensor(batch, "adjacency").bool()
-        state.aux["covered_edges"] = torch.zeros_like(adjacency, dtype=torch.bool)
+        adjacency = self._effective_adjacency(batch)
+        state.aux["remaining_edges"] = (adjacency.sum(dim=(1, 2)) // 2).long()
         return state
 
     def get_mask(self, state: ProblemState) -> torch.Tensor:
         node_count = state.selected_mask.size(1)
-        adjacency = self.require_tensor(state.batch, "adjacency").bool()
-        uncovered = adjacency & ~state.aux["covered_edges"]
-        all_covered = ~uncovered.any(dim=(1, 2))
+        all_covered = state.aux["remaining_edges"] <= 0
         state.done = state.done | all_covered
         node_mask = state.selected_mask.clone()
         stop_mask = (~all_covered).unsqueeze(1)
@@ -252,12 +250,28 @@ class VertexCoverProblem(GraphSubsetProblem):
         node_active: torch.Tensor,
         action: torch.Tensor,
     ) -> None:
+        adjacency = self._effective_adjacency(state.batch)
         rows = torch.arange(state.batch_size, device=state.device)
         active_rows = rows[node_active]
         active_actions = action[node_active]
-        state.aux["covered_edges"][active_rows, active_actions, :] = True
-        state.aux["covered_edges"][active_rows, :, active_actions] = True
+        selected_before = state.selected_mask[active_rows].clone()
+        row_indices = torch.arange(active_rows.size(0), device=state.device)
+        selected_before[row_indices, active_actions] = False
+        newly_covered = adjacency[active_rows, active_actions, :] & ~selected_before
+        state.aux["remaining_edges"][active_rows] -= newly_covered.sum(dim=1).long()
         state.aux["available"] &= ~state.selected_mask
+
+    @staticmethod
+    def _effective_adjacency(batch: dict[str, Any]) -> torch.Tensor:
+        adjacency = batch["adjacency"]
+        if not isinstance(adjacency, torch.Tensor):
+            raise ValueError("Missing tensor batch['adjacency']")
+        adjacency = adjacency.bool()
+        valid = valid_node_mask(batch)
+        if valid is not None:
+            within = valid.unsqueeze(-1) & valid.unsqueeze(-2)
+            adjacency = adjacency & within
+        return adjacency
 
     def check_feasible(self, batch: dict[str, Any], solution: dict[str, torch.Tensor]):
         adjacency = self.require_tensor(batch, "adjacency").bool()

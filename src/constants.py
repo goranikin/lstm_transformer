@@ -51,6 +51,8 @@ AUTOREGRESSIVE_DECODERS = frozenset(
 MINIMIZATION_PROBLEMS = frozenset({"tsp", "cvrp", "vertex_cover"})
 MAXIMIZATION_PROBLEMS = frozenset({"orienteering", "knapsack", "mis", "max_clique"})
 
+GRAPH_PROBLEMS = frozenset({"mis", "max_clique", "vertex_cover"})
+
 DEFAULT_SEEDS = (1234, 4321, 9999)
 
 DEFAULT_SPLIT_INSTANCES: dict[str, int] = {

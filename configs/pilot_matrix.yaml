@@ -41,6 +41,9 @@ data:
   root: ${oc.env:HOME}/local_db/lstm_transformer
   batch_size: 16
   eval_batch_size: 16
+  # ML4CO graph instances are large (often 700-1200 nodes) and variable-size.
+  graph_batch_size: 2
+  graph_eval_batch_size: 2
   num_workers: 0
   train:
     instances: 64
