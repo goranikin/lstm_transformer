@@ -4,7 +4,7 @@ from collections.abc import Iterable, Iterator
 from typing import Any
 
 from src.constants import ProblemName
-from src.paths import problem_dataset_path
+from src.paths import problem_dataset_path, split_for_seed
 
 JsonRecord = dict[str, Any]
 
@@ -74,4 +74,6 @@ def resolve_output_path(
 ) -> str:
     if output_path is not None:
         return output_path
-    return str(problem_dataset_path(problem, seed))
+    return str(
+        problem_dataset_path(problem, seed=seed, split=split_for_seed(seed))
+    )

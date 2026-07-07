@@ -1,6 +1,7 @@
 import shlex
 import subprocess
 from collections.abc import Sequence
+from pathlib import Path
 from typing import Any, cast
 
 import hydra
@@ -11,13 +12,11 @@ from src.constants import (
     DEFAULT_SEEDS,
     DEFAULT_TARGET_ALGORITHM,
     MATRIX_ENCODERS,
-    PROBLEM_FILE_PREFIX,
     PROBLEM_NAMES,
-    PROBLEM_PATH_DIR,
     ProblemName,
 )
 from src.experiments.parameter_comparison import config_sequence, validate_values
-from src.paths import resolve_data_root
+from src.paths import problem_split_paths, resolve_data_root, resolve_user_path
 
 STAGES: dict[str, tuple[ProblemName, ...]] = {
     "all": PROBLEM_NAMES,
@@ -62,15 +61,12 @@ def run_from_config(cfg: DictConfig) -> list[list[str]]:
         decoders=decoders,
         modes=modes,
         seeds=seeds,
-        data_root=str(resolve_data_root(cfg.data.root)),
-        train_instances=int(cfg.data.train.instances),
+        data_root=resolve_data_root(cfg.data.root),
         train_seed=int(cfg.data.train.seed),
-        val_instances=int(cfg.data.validation.instances),
         val_seed=int(cfg.data.validation.seed),
-        test_instances=int(cfg.data.test.instances),
         test_seed=int(cfg.data.test.seed),
-        output_root=str(cfg.paths.output_root),
-        parameter_budget=str(cfg.parameter_budget.path),
+        output_root=str(resolve_user_path(cfg.paths.output_root)),
+        parameter_budget=str(resolve_user_path(cfg.parameter_budget.path)),
         use_parameter_budget=bool(cfg.parameter_budget.enabled),
         epochs=int(cfg.trainer.epochs),
         steps_per_epoch=none_or_int(cfg.trainer.steps_per_epoch),
@@ -111,12 +107,9 @@ def build_commands(
     decoders: Sequence[str],
     modes: Sequence[str],
     seeds: Sequence[int],
-    data_root: str,
-    train_instances: int,
+    data_root: Path,
     train_seed: int,
-    val_instances: int,
     val_seed: int,
-    test_instances: int,
     test_seed: int,
     output_root: str,
     parameter_budget: str,
@@ -147,15 +140,12 @@ def build_commands(
                             and problem in {"tsp", "cvrp"}
                         ):
                             continue
-                        paths = problem_paths(
-                            data_root,
+                        paths = problem_split_paths(
                             problem,
-                            train_instances=train_instances,
                             train_seed=train_seed,
-                            val_instances=val_instances,
                             val_seed=val_seed,
-                            test_instances=test_instances,
                             test_seed=test_seed,
+                            data_root=data_root,
                         )
                         output_dir = (
                             f"{output_root}/seed_{seed}/{mode}/"
@@ -171,6 +161,7 @@ def build_commands(
                             f"encoder={encoder}",
                             f"decoder={decoder}",
                             f"mode={mode}",
+                            f"data.root={data_root}",
                             f"data.train_path={paths['train']}",
                             f"data.val_path={paths['val']}",
                             f"data.test_path={paths['test']}",
@@ -200,26 +191,6 @@ def build_commands(
                             )
                         commands.append(command)
     return commands
-
-
-def problem_paths(
-    data_root: str,
-    problem: ProblemName,
-    *,
-    train_instances: int,
-    train_seed: int,
-    val_instances: int,
-    val_seed: int,
-    test_instances: int,
-    test_seed: int,
-) -> dict[str, str]:
-    directory = PROBLEM_PATH_DIR[problem]
-    prefix = PROBLEM_FILE_PREFIX[problem]
-    return {
-        "train": f"{data_root}/{directory}/{prefix}_seed{train_seed}.jsonl",
-        "val": f"{data_root}/{directory}/{prefix}_val_seed{val_seed}.jsonl",
-        "test": f"{data_root}/{directory}/{prefix}_test_seed{test_seed}.jsonl",
-    }
 
 
 def none_or_int(value: Any) -> int | None:

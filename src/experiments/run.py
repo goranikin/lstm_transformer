@@ -13,9 +13,7 @@ from src.constants import (
     DEFAULT_TARGET_ALGORITHM,
     ENCODER_KINDS,
     MATRIX_ENCODERS,
-    PROBLEM_FILE_PREFIX,
     PROBLEM_NAMES,
-    PROBLEM_PATH_DIR,
     DecoderKind,
     EncoderKind,
     ProblemName,
@@ -29,7 +27,7 @@ from src.experiments.parameter_comparison import (
     resolve_target,
 )
 from src.model import NCOModel
-from src.paths import resolve_data_root
+from src.paths import problem_dataset_path, resolve_user_path
 from src.training import Trainer, TrainingConfig
 from src.training.wandb_support import finish as finish_wandb
 from src.training.wandb_support import init_from_config as init_wandb
@@ -202,34 +200,33 @@ def validate_config(cfg: DictConfig) -> None:
 def resolve_data_path(cfg: DictConfig, *, split: str) -> str | None:
     configured = cfg.data.get(f"{split}_path")
     if configured is not None:
-        return str(Path(configured).expanduser())
+        return str(resolve_user_path(configured))
     if not bool(cfg.data.use_default_paths):
         if split == "train":
             raise ValueError("data.train_path is required when use_default_paths=false")
         return None
     if split == "train":
-        instances = int(cfg.scale.train.instances)
         seed = int(cfg.scale.train.seed)
     elif split == "val":
-        instances = int(cfg.scale.validation.instances)
         seed = int(cfg.scale.validation.seed)
     elif split == "test":
-        instances = int(cfg.scale.test.instances)
         seed = int(cfg.scale.test.seed)
     else:
         raise ValueError(f"Unsupported split: {split}")
-    problem = str(cfg.problem)
-    prefix = PROBLEM_FILE_PREFIX[problem]
-    directory = PROBLEM_PATH_DIR[problem]
-    data_root = resolve_data_root(cfg.data.root)
-    if split == "train":
-        return str(data_root / directory / f"{prefix}_seed{seed}.jsonl")
-    return str(data_root / directory / f"{prefix}_{split}_seed{seed}.jsonl")
+    problem = cast(ProblemName, str(cfg.problem))
+    return str(
+        problem_dataset_path(
+            problem,
+            seed=seed,
+            split=split,
+            data_root=cfg.data.root,
+        )
+    )
 
 
 def resolve_output_dir(cfg: DictConfig) -> str:
     if cfg.paths.output_dir:
-        return str(cfg.paths.output_dir)
+        return str(resolve_user_path(cfg.paths.output_dir))
     return (
         f"{cfg.paths.output_root}/seed_{cfg.seed}/{cfg.mode}/"
         f"{cfg.problem}/{cfg.encoder}/{cfg.decoder}"
@@ -276,7 +273,7 @@ def resolve_model_parameters(
         }
 
     row = find_budget_row(
-        path=Path(str(cfg.parameter_budget.path)),
+        path=resolve_user_path(str(cfg.parameter_budget.path)),
         problem=problem,
         encoder=encoder,
         decoder=decoder,

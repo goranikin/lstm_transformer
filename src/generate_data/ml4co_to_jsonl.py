@@ -8,9 +8,14 @@ from typing import Any, Callable, Iterable, TextIO
 
 from tqdm import tqdm
 
-from src.constants import PROBLEM_FILE_PREFIX, PROBLEM_PATH_DIR, ProblemName
+from src.constants import ProblemName
 from src.generate_data.common import instance_seed
-from src.paths import LOCAL_DB_ROOT, PUBLIC_DATA_84K_ROOT, RAW_ML4CO_ROOT
+from src.paths import (
+    LOCAL_DB_ROOT,
+    PUBLIC_DATA_84K_ROOT,
+    RAW_ML4CO_ROOT,
+    problem_dataset_path,
+)
 
 TARGET_COUNTS = {
     "train": 64_000,
@@ -202,12 +207,12 @@ def normalize_record(
 
 
 def data_output_path(data_root: Path, problem: ProblemName, split_name: str) -> Path:
-    prefix = PROBLEM_FILE_PREFIX[problem]
-    seed = SPLIT_SEEDS[split_name]
-    problem_dir = data_root / PROBLEM_PATH_DIR[problem]
-    if split_name == "train":
-        return problem_dir / f"{prefix}_seed{seed}.jsonl"
-    return problem_dir / f"{prefix}_{split_name}_seed{seed}.jsonl"
+    return problem_dataset_path(
+        problem,
+        seed=SPLIT_SEEDS[split_name],
+        split=split_name,
+        data_root=data_root,
+    )
 
 
 def discover_train_files(input_roots: list[Path]) -> list[Path]:

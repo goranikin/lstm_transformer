@@ -7,11 +7,13 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 
 from src.constants import DEFAULT_TARGET_ALGORITHM, ProblemName
+from src.paths import resolve_user_path
 
 
 def read_jsonl(path: str | Path) -> list[dict[str, Any]]:
+    resolved = resolve_user_path(path)
     records: list[dict[str, Any]] = []
-    with Path(path).open(encoding="utf-8") as handle:
+    with resolved.open(encoding="utf-8") as handle:
         for line_number, line in enumerate(handle, start=1):
             stripped = line.strip()
             if not stripped:
@@ -40,7 +42,7 @@ class ProblemDataset(Dataset):
         target_algorithm: str | None = None,
         dtype: torch.dtype = torch.float32,
     ) -> None:
-        self.path = str(path)
+        self.path = str(resolve_user_path(path))
         self.problem = problem
         self.target_algorithm = target_algorithm or DEFAULT_TARGET_ALGORITHM[problem]
         self.dtype = dtype

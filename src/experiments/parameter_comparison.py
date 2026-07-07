@@ -26,6 +26,7 @@ from src.constants import (
     ProblemName,
 )
 from src.model import NCOModel
+from src.paths import resolve_user_path
 
 INPUT_DIM_BY_PROBLEM: dict[str, int] = {
     "tsp": 2,
@@ -91,8 +92,9 @@ def run_from_config(cfg: DictConfig) -> str:
     settings = settings_from_config(cfg)
     text = build_parameter_comparison(settings)
     if settings.output:
-        Path(settings.output).parent.mkdir(parents=True, exist_ok=True)
-        Path(settings.output).write_text(text, encoding="utf-8")
+        output_path = resolve_user_path(settings.output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(text, encoding="utf-8")
     else:
         print(text)
     return text
