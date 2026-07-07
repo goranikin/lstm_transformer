@@ -21,3 +21,4 @@ data/
 .ruff_cache/
 
 data_public_*
+outputs/
