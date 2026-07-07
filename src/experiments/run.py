@@ -29,10 +29,11 @@ from src.experiments.parameter_comparison import (
 from src.model import NCOModel
 from src.paths import problem_dataset_path, resolve_user_path
 from src.training import Trainer, TrainingConfig
+from src.training.metrics import wandb_metrics
+from src.training.wandb_support import build_wandb_config, default_run_name
 from src.training.wandb_support import finish as finish_wandb
 from src.training.wandb_support import init_from_config as init_wandb
 from src.training.wandb_support import log as wandb_log
-from src.training.metrics import wandb_metrics
 from src.utils import resolve_device, set_seed
 
 
@@ -127,8 +128,23 @@ def run_from_config(cfg: DictConfig) -> dict[str, Any]:
             cfg,
             output_dir=output_dir,
             run_name=cfg.wandb.name
-            or f"{problem}_{encoder}_{decoder}_{cfg.mode}_seed{cfg.seed}",
+            or default_run_name(
+                problem=problem,
+                encoder=encoder,
+                decoder=decoder,
+                mode=str(cfg.mode),
+            ),
             default_tags=[problem, encoder, decoder, str(cfg.mode)],
+            config=build_wandb_config(
+                cfg=cfg,
+                matched_params=matched_params,
+                model=model,
+                train_path=train_path,
+                val_path=val_path,
+                test_path=test_path,
+                target_algorithm=target_algorithm,
+                output_dir=output_dir,
+            ),
         ),
         wandb_train_eval_batches=int(cfg.wandb.train_eval_batches),
     )
@@ -240,37 +256,60 @@ def resolve_model_parameters(
     encoder: EncoderKind,
     decoder: DecoderKind,
 ) -> dict[str, int | float | str | None]:
+    num_layers = int(cfg.model.num_layers)
+    num_heads = int(cfg.model.num_heads)
+    input_dim = INPUT_DIM_BY_PROBLEM[problem]
+
     if not bool(cfg.parameter_budget.enabled):
         d_model = int(cfg.model.d_model)
         d_ff = int(cfg.model.d_ff)
         matched_params = count_current_params(
             cfg, problem, encoder, decoder, d_model, d_ff
         )
-        return {
-            "source": "explicit",
-            "d_model": d_model,
-            "d_ff": d_ff,
-            "matched_params": matched_params,
-            "target_params": matched_params,
-            "delta": 0,
-            "delta_pct": 0.0,
-        }
+        return finalize_resolved_parameters(
+            source="explicit",
+            input_dim=input_dim,
+            d_model=d_model,
+            d_ff=d_ff,
+            num_layers=num_layers,
+            num_heads=num_heads,
+            base_d_model=d_model,
+            base_d_ff=d_ff,
+            base_params=matched_params,
+            matched_params=matched_params,
+            target_params=matched_params,
+            delta=0,
+            delta_pct=0.0,
+        )
     if cfg.model.d_model is not None and cfg.model.d_ff is not None:
         d_model = int(cfg.model.d_model)
         d_ff = int(cfg.model.d_ff)
         matched_params = count_current_params(
             cfg, problem, encoder, decoder, d_model, d_ff
         )
-        return {
-            "source": "explicit_over_budget",
-            "d_model": d_model,
-            "d_ff": d_ff,
-            "matched_params": matched_params,
-            "target_params": int(cfg.parameter_budget.target_params or matched_params),
-            "delta": matched_params
-            - int(cfg.parameter_budget.target_params or matched_params),
-            "delta_pct": 0.0,
-        }
+        target_params = int(cfg.parameter_budget.target_params or matched_params)
+        settings = parameter_budget_settings(cfg)
+        base_params = base_parameter_count(
+            problem=problem,
+            encoder=encoder,
+            decoder=decoder,
+            args=settings,
+        )
+        return finalize_resolved_parameters(
+            source="explicit_over_budget",
+            input_dim=input_dim,
+            d_model=d_model,
+            d_ff=d_ff,
+            num_layers=num_layers,
+            num_heads=num_heads,
+            base_d_model=settings.d_model,
+            base_d_ff=settings.d_ff or settings.d_model * settings.d_ff_multiplier,
+            base_params=base_params,
+            matched_params=matched_params,
+            target_params=target_params,
+            delta=matched_params - target_params,
+            delta_pct=100.0 * (matched_params - target_params) / max(target_params, 1),
+        )
 
     row = find_budget_row(
         path=resolve_user_path(str(cfg.parameter_budget.path)),
@@ -278,8 +317,8 @@ def resolve_model_parameters(
         encoder=encoder,
         decoder=decoder,
         target_params=none_or_int(cfg.parameter_budget.target_params),
-        num_layers=int(cfg.model.num_layers),
-        num_heads=int(cfg.model.num_heads),
+        num_layers=num_layers,
+        num_heads=num_heads,
     )
     if row is None:
         if bool(cfg.parameter_budget.strict):
@@ -289,15 +328,77 @@ def resolve_model_parameters(
                 f"in {cfg.parameter_budget.path}"
             )
         row = compute_budget_row(cfg, problem=problem, encoder=encoder, decoder=decoder)
+    return finalize_resolved_parameters(
+        source=str(row.get("source", cfg.parameter_budget.path)),
+        input_dim=int(row.get("input_dim", input_dim)),
+        d_model=int(row["matched_d_model"]),
+        d_ff=int(row["matched_d_ff"]),
+        num_layers=num_layers,
+        num_heads=num_heads,
+        base_d_model=row.get("base_d_model"),
+        base_d_ff=row.get("base_d_ff"),
+        base_params=row.get("base_params"),
+        matched_params=int(row["matched_params"]),
+        target_params=int(row["target_params"]),
+        delta=int(row["delta"]),
+        delta_pct=float(row["delta_pct"]),
+        command_args=row.get("command_args"),
+    )
+
+
+def finalize_resolved_parameters(
+    *,
+    source: str,
+    input_dim: int,
+    d_model: int,
+    d_ff: int,
+    num_layers: int,
+    num_heads: int,
+    base_d_model: int | None,
+    base_d_ff: int | None,
+    base_params: int | None,
+    matched_params: int,
+    target_params: int,
+    delta: int,
+    delta_pct: float,
+    command_args: str | None = None,
+) -> dict[str, int | float | str | None]:
+    if command_args is None:
+        command_args = build_model_command_args(
+            d_model=d_model,
+            d_ff=d_ff,
+            num_layers=num_layers,
+            num_heads=num_heads,
+        )
     return {
-        "source": str(row.get("source", cfg.parameter_budget.path)),
-        "d_model": int(row["matched_d_model"]),
-        "d_ff": int(row["matched_d_ff"]),
-        "matched_params": int(row["matched_params"]),
-        "target_params": int(row["target_params"]),
-        "delta": int(row["delta"]),
-        "delta_pct": float(row["delta_pct"]),
+        "source": source,
+        "input_dim": input_dim,
+        "d_model": d_model,
+        "d_ff": d_ff,
+        "num_layers": num_layers,
+        "num_heads": num_heads,
+        "base_d_model": base_d_model,
+        "base_d_ff": base_d_ff,
+        "base_params": base_params,
+        "matched_params": matched_params,
+        "target_params": target_params,
+        "delta": delta,
+        "delta_pct": delta_pct,
+        "command_args": command_args,
     }
+
+
+def build_model_command_args(
+    *,
+    d_model: int,
+    d_ff: int,
+    num_layers: int,
+    num_heads: int,
+) -> str:
+    return (
+        f"model.d_model={d_model} model.d_ff={d_ff} "
+        f"model.num_layers={num_layers} model.num_heads={num_heads}"
+    )
 
 
 def find_budget_row(
@@ -367,17 +468,34 @@ def compute_budget_row(
         args=settings,
     )
     delta = matched_params - target_params
+    base_params = base_parameter_count(
+        problem=problem,
+        encoder=encoder,
+        decoder=decoder,
+        args=settings,
+    )
+    base_d_ff = settings.d_ff or settings.d_model * settings.d_ff_multiplier
     return {
         "source": "computed",
         "problem": problem,
         "encoder": encoder,
         "decoder": decoder,
+        "input_dim": INPUT_DIM_BY_PROBLEM[problem],
+        "base_d_model": settings.d_model,
+        "base_d_ff": base_d_ff,
+        "base_params": base_params,
         "target_params": target_params,
         "matched_d_model": matched_d_model,
         "matched_d_ff": matched_d_ff,
         "matched_params": matched_params,
         "delta": delta,
         "delta_pct": 100.0 * delta / max(target_params, 1),
+        "command_args": build_model_command_args(
+            d_model=matched_d_model,
+            d_ff=matched_d_ff,
+            num_layers=settings.num_layers,
+            num_heads=settings.num_heads,
+        ),
     }
 
 

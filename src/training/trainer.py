@@ -193,9 +193,7 @@ class Trainer:
                 avg_loss = sum(losses) / len(losses)
                 iterator.set_postfix(loss=avg_loss)
                 if self.config.wandb_log:
-                    step_metrics = batch_metrics(
-                        self.model.problem, batch, output, 0.0
-                    )
+                    step_metrics = batch_metrics(self.model.problem, batch, output, 0.0)
                     wandb_log(
                         wandb_rl_step_metrics(
                             policy_loss=avg_loss,

@@ -15,7 +15,9 @@ PUBLIC_DATA_100K_ROOT = LOCAL_DB_ROOT / "data_public_100k"
 PUBLIC_DATA_84K_ROOT = LOCAL_DB_ROOT / "data_public_84k"
 RAW_ML4CO_ROOT = LOCAL_DB_ROOT / "raw"
 
-_SPLIT_BY_SEED = {seed: split for split, seed in zip(("train", "val", "test"), DEFAULT_SEEDS)}
+_SPLIT_BY_SEED = {
+    seed: split for split, seed in zip(("train", "val", "test"), DEFAULT_SEEDS)
+}
 
 
 def resolve_user_path(path: str | Path) -> Path:
