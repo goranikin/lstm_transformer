@@ -28,7 +28,7 @@ uv run python -m src.generate_data.TSP.generate \
   --num-instances 10 \
   --num-nodes 50 \
   --seed 1234 \
-  --output-path data/tsp/tsp50_smoke.jsonl
+  --output-path ~/local_db/lstm_transformer/tsp/tsp50_smoke.jsonl
 ```
 
 ## Install on Linux (recommended: prebuilt binary)

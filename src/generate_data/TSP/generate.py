@@ -5,7 +5,12 @@ from typing import Any
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.generate_data.common import instance_seed, iter_instance_indices, write_jsonl
+from src.generate_data.common import (
+    instance_seed,
+    iter_instance_indices,
+    resolve_output_path,
+    write_jsonl,
+)
 from src.generate_data.TSP.algorithms import solve_concorde
 
 
@@ -58,7 +63,12 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--start-index", type=int, default=0)
     parser.add_argument("--num-nodes", type=int, required=True)
     parser.add_argument("--seed", type=int, required=True)
-    parser.add_argument("--output-path", type=str, required=True)
+    parser.add_argument(
+        "--output-path",
+        type=str,
+        default=None,
+        help="Output JSONL path (default: ~/local_db/lstm_transformer/<problem>/... from seed).",
+    )
     parser.add_argument("--concorde-executable", type=str, default=None)
     parser.add_argument("--solver-timeout-sec", type=float, default=None)
     return parser
@@ -71,7 +81,7 @@ def main() -> None:
         start_index=args.start_index,
         num_nodes=args.num_nodes,
         seed=args.seed,
-        output_path=args.output_path,
+        output_path=resolve_output_path("tsp", seed=args.seed, output_path=args.output_path),
         concorde_executable=args.concorde_executable,
         solver_timeout_sec=args.solver_timeout_sec,
     )

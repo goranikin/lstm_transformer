@@ -1,185 +1,94 @@
-from __future__ import annotations
-
 import argparse
 import json
-import random
 from pathlib import Path
-from typing import Any, Literal, TextIO
+from typing import Literal, TextIO
 
 from tqdm import tqdm
 
-from src.constants import (
-    PROBLEM_FILE_PREFIX,
-    PROBLEM_PATH_DIR,
-    PROBLEM_NAMES,
-    ProblemName,
-)
+from src.constants import PROBLEM_NAMES, ProblemName
 from src.generate_data.common import instance_seed
-from src.generate_data.ml4co_to_jsonl import TARGET_COUNTS
+from src.generate_data.ml4co_to_jsonl import (
+    SPLIT_SEEDS,
+    TARGET_COUNTS,
+    build_assignment,
+    convert_jsonl_file,
+    count_jsonl_lines,
+    normalize_record,
+    resolve_problem_name,
+)
 from src.paths import DATA_ROOT, LOCAL_DB_ROOT, PUBLIC_DATA_100K_ROOT
 
 Layout = Literal["public", "data"]
 
-RECORD_TO_CANONICAL: dict[str, ProblemName] = {
+PROBLEM_NAME_TO_KEY: dict[ProblemName, str] = {
     "tsp": "tsp",
     "cvrp": "cvrp",
     "mis": "mis",
-    "maximum_clique": "max_clique",
-    "minimum_vertex_cover": "vertex_cover",
+    "max_clique": "mcl",
+    "vertex_cover": "mvc",
 }
-
-DIR_TO_PROBLEM: dict[str, ProblemName] = {
-    "tsp": "tsp",
-    "cvrp": "cvrp",
-    "mis": "mis",
-    "max_clique": "max_clique",
-    "vertex_cover": "vertex_cover",
-}
-
-SPLIT_SEEDS = {
-    "train": 1234,
-    "val": 4321,
-    "test": 9999,
-}
-
-INSTANCE_FIELDS: dict[ProblemName, tuple[str, ...]] = {
-    "tsp": ("num_nodes", "coordinates"),
-    "cvrp": (
-        "num_customers",
-        "depot",
-        "coordinates",
-        "demands",
-        "vehicle_capacity",
-    ),
-    "mis": ("num_nodes", "edges", "node_weights"),
-    "max_clique": ("num_nodes", "edges", "node_weights"),
-    "vertex_cover": ("num_nodes", "edges", "node_weights"),
-}
-
-
-def allocate_split_counts(total: int, target_counts: dict[str, int]) -> dict[str, int]:
-    target_total = sum(target_counts.values())
-    if total >= target_total:
-        return dict(target_counts)
-
-    allocated: dict[str, int] = {}
-    assigned = 0
-    items = list(target_counts.items())
-    for index, (split_name, target) in enumerate(items):
-        if index == len(items) - 1:
-            allocated[split_name] = total - assigned
-        else:
-            count = (total * target) // target_total
-            allocated[split_name] = count
-            assigned += count
-    return allocated
-
-
-def count_jsonl_lines(path: Path) -> int:
-    count = 0
-    with path.open("r", encoding="utf-8") as handle:
-        for line in handle:
-            if line.strip():
-                count += 1
-    return count
-
-
-def build_assignment(
-    total: int,
-    *,
-    seed: int,
-    target_counts: dict[str, int],
-) -> tuple[dict[str, int], list[tuple[str, int]]]:
-    split_counts = allocate_split_counts(total, target_counts)
-    used = sum(split_counts.values())
-
-    if used < total:
-        skipped = total - used
-        print(
-            f"Using {used:,} of {total:,} instances "
-            f"({skipped:,} discarded after shuffle)."
-        )
-
-    order = list(range(used))
-    random.Random(seed).shuffle(order)
-
-    assignment: list[tuple[str, int] | None] = [None] * used
-    cursor = 0
-    for split_name, _target in target_counts.items():
-        split_size = split_counts[split_name]
-        for split_index, instance_index in enumerate(order[cursor : cursor + split_size]):
-            assignment[instance_index] = (split_name, split_index)
-        cursor += split_size
-
-    if any(item is None for item in assignment):
-        raise RuntimeError("Failed to build split assignment.")
-
-    return split_counts, assignment  # type: ignore[return-value]
-
-
-def resolve_problem_name(
-    record: dict[str, Any],
-    *,
-    directory_name: str,
-    override: ProblemName | None,
-) -> ProblemName:
-    if override is not None:
-        return override
-    if directory_name in DIR_TO_PROBLEM:
-        return DIR_TO_PROBLEM[directory_name]
-    canonical = RECORD_TO_CANONICAL.get(str(record.get("problem")))
-    if canonical is not None:
-        return canonical
-    raise ValueError(
-        f"Could not infer problem for {directory_name!r}; pass --problem explicitly."
-    )
-
-
-def normalize_record(
-    record: dict[str, Any],
-    *,
-    problem: ProblemName,
-    split_name: str,
-    split_index: int,
-) -> dict[str, Any]:
-    """Convert ML4CO public JSONL rows into the minimal schema used by data/tsp."""
-    split_seed = SPLIT_SEEDS[split_name]
-    normalized: dict[str, Any] = {
-        "problem": problem,
-        "index": split_index,
-        "seed": instance_seed(split_seed, split_index),
-    }
-
-    for field in INSTANCE_FIELDS[problem]:
-        if field in record:
-            normalized[field] = record[field]
-
-    solutions = record.get("solutions")
-    if isinstance(solutions, dict):
-        normalized["solutions"] = solutions
-
-    return normalized
 
 
 def public_output_path(output_dir: Path, split_name: str) -> Path:
     return output_dir / f"{split_name}.jsonl"
 
 
-def data_output_path(data_root: Path, problem: ProblemName, split_name: str) -> Path:
-    prefix = PROBLEM_FILE_PREFIX[problem]
-    seed = SPLIT_SEEDS[split_name]
-    problem_dir = data_root / PROBLEM_PATH_DIR[problem]
-    if split_name == "train":
-        return problem_dir / f"{prefix}_seed{seed}.jsonl"
-    return problem_dir / f"{prefix}_{split_name}_seed{seed}.jsonl"
+def discover_train_files(input_roots: list[Path]) -> list[Path]:
+    files: list[Path] = []
+    for root in input_roots:
+        files.extend(
+            sorted(path for path in root.glob("*/train.jsonl") if path.is_file())
+        )
+    return files
 
 
-def convert_jsonl_file(
+def problem_key_from_name(problem: ProblemName | None) -> str | None:
+    if problem is None:
+        return None
+    return PROBLEM_NAME_TO_KEY[problem]
+
+
+def convert_jsonl_file_with_layout(
     input_path: Path,
     *,
     layout: Layout,
     output_dir: Path | None,
     data_root: Path,
+    problem: ProblemName | None,
+    seed: int,
+    target_counts: dict[str, int],
+    normalize: bool,
+) -> dict[str, int]:
+    if layout == "data":
+        if not normalize:
+            raise ValueError(
+                "layout=data requires normalized output; omit --no-normalize."
+            )
+        return convert_jsonl_file(
+            input_path,
+            output_root=data_root,
+            problem_key=problem_key_from_name(problem),
+            seed=seed,
+            target_counts=target_counts,
+        )
+
+    if output_dir is None:
+        raise ValueError("output_dir is required when layout=public")
+
+    return convert_public_layout(
+        input_path,
+        output_dir=output_dir,
+        problem=problem,
+        seed=seed,
+        target_counts=target_counts,
+        normalize=normalize,
+    )
+
+
+def convert_public_layout(
+    input_path: Path,
+    *,
+    output_dir: Path,
     problem: ProblemName | None,
     seed: int,
     target_counts: dict[str, int],
@@ -199,7 +108,9 @@ def convert_jsonl_file(
     )
 
     if total < sum(target_counts.values()):
-        requested = ", ".join(f"{name}={count:,}" for name, count in target_counts.items())
+        requested = ", ".join(
+            f"{name}={count:,}" for name, count in target_counts.items()
+        )
         actual = ", ".join(f"{name}={count:,}" for name, count in split_counts.items())
         print(
             f"Warning: only {total:,} instances available; "
@@ -214,19 +125,14 @@ def convert_jsonl_file(
     resolved_problem = resolve_problem_name(
         json.loads(first_line),
         directory_name=input_path.parent.name,
-        override=problem,
+        problem_key=problem_key_from_name(problem),
     )
 
     try:
         for split_name, count in split_counts.items():
             if count == 0:
                 continue
-            if layout == "data":
-                out_path = data_output_path(data_root, resolved_problem, split_name)
-            else:
-                if output_dir is None:
-                    raise ValueError("output_dir is required when layout=public")
-                out_path = public_output_path(output_dir, split_name)
+            out_path = public_output_path(output_dir, split_name)
             out_path.parent.mkdir(parents=True, exist_ok=True)
             output_paths[split_name] = out_path
             handles[split_name] = out_path.open("w", encoding="utf-8")
@@ -270,13 +176,6 @@ def convert_jsonl_file(
     return split_counts
 
 
-def discover_train_files(input_roots: list[Path]) -> list[Path]:
-    files: list[Path] = []
-    for root in input_roots:
-        files.extend(sorted(path for path in root.glob("*/train.jsonl") if path.is_file()))
-    return files
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
@@ -312,7 +211,7 @@ def main() -> None:
         default="data",
         help=(
             "public writes train.jsonl/val.jsonl/test.jsonl next to the source; "
-            "data writes data/<problem>/ files like data/tsp."
+            "data writes <problem>/ files under the local data root, e.g. tsp/."
         ),
     )
     parser.add_argument(
@@ -346,7 +245,7 @@ def main() -> None:
             raise FileNotFoundError(f"No */train.jsonl files found under: {roots}")
         for train_file in train_files:
             print(f"\n=== {train_file} ===")
-            convert_jsonl_file(
+            convert_jsonl_file_with_layout(
                 train_file,
                 layout=args.layout,
                 output_dir=train_file.parent if args.layout == "public" else None,
@@ -361,7 +260,7 @@ def main() -> None:
     if args.input is None:
         parser.error("Provide --input or at least one --input-root.")
 
-    convert_jsonl_file(
+    convert_jsonl_file_with_layout(
         args.input,
         layout=args.layout,
         output_dir=args.output_dir,

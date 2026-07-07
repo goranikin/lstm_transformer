@@ -1,4 +1,4 @@
-"""Report JSONL generation progress under data/<problem>/."""
+"""Report JSONL generation progress under ~/local_db/lstm_transformer/<problem>/."""
 
 import argparse
 import re
@@ -230,7 +230,7 @@ def render_report(datasets: list[DatasetStatus], *, verbose: bool) -> str:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Inspect JSONL data-generation progress under data/<problem>/."
+        description="Inspect JSONL data-generation progress under the local data root."
     )
     parser.add_argument(
         "--data-dir",

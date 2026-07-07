@@ -4,7 +4,12 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.generate_data.common import instance_seed, iter_instance_indices, write_jsonl
+from src.generate_data.common import (
+    instance_seed,
+    iter_instance_indices,
+    resolve_output_path,
+    write_jsonl,
+)
 from src.generate_data.graph_utils import (
     adjacency_to_edges,
     generate_erdos_renyi_graph,
@@ -62,7 +67,12 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--num-nodes", type=int, required=True)
     parser.add_argument("--edge-probability", type=float, required=True)
     parser.add_argument("--seed", type=int, required=True)
-    parser.add_argument("--output-path", type=str, required=True)
+    parser.add_argument(
+        "--output-path",
+        type=str,
+        default=None,
+        help="Output JSONL path (default: ~/local_db/lstm_transformer/<problem>/... from seed).",
+    )
     parser.add_argument("--solver-time-limit-sec", type=float, default=None)
     return parser
 
@@ -75,7 +85,7 @@ def main() -> None:
         num_nodes=args.num_nodes,
         edge_probability=args.edge_probability,
         seed=args.seed,
-        output_path=args.output_path,
+        output_path=resolve_output_path("mis", seed=args.seed, output_path=args.output_path),
         solver_time_limit_sec=args.solver_time_limit_sec,
     )
     written = generate_mis_dataset(config)

@@ -5,7 +5,12 @@ from typing import Any, Self
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from src.generate_data.common import instance_seed, iter_instance_indices, write_jsonl
+from src.generate_data.common import (
+    instance_seed,
+    iter_instance_indices,
+    resolve_output_path,
+    write_jsonl,
+)
 from src.generate_data.CVRP.algorithms import solve_gurobi
 
 
@@ -110,7 +115,12 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--start-index", type=int, default=0)
     parser.add_argument("--num-customers", type=int, required=True)
     parser.add_argument("--seed", type=int, required=True)
-    parser.add_argument("--output-path", type=str, required=True)
+    parser.add_argument(
+        "--output-path",
+        type=str,
+        default=None,
+        help="Output JSONL path (default: ~/local_db/lstm_transformer/<problem>/... from seed).",
+    )
     parser.add_argument("--min-demand", type=int, default=1)
     parser.add_argument("--max-demand", type=int, default=9)
     parser.add_argument("--vehicle-capacity", type=int, default=None)
@@ -132,7 +142,7 @@ def main() -> None:
         capacity_ratio=args.capacity_ratio,
         max_vehicles=args.max_vehicles,
         seed=args.seed,
-        output_path=args.output_path,
+        output_path=resolve_output_path("cvrp", seed=args.seed, output_path=args.output_path),
         solver_time_limit_sec=args.solver_time_limit_sec,
     )
     written = generate_cvrp_dataset(config)

@@ -1,7 +1,7 @@
 # Data generation
 
 Scripts and dataset loaders for problem instances written to JSONL files under
-the repo-root `data/` directory.
+`~/local_db/lstm_transformer/`.
 
 | Problem | Module | Output docs |
 |---------|--------|-------------|

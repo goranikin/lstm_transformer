@@ -3,6 +3,9 @@ import os
 from collections.abc import Iterable, Iterator
 from typing import Any
 
+from src.constants import ProblemName
+from src.paths import problem_dataset_path
+
 JsonRecord = dict[str, Any]
 
 
@@ -61,3 +64,14 @@ def read_jsonl(path: str) -> Iterator[JsonRecord]:
 
 def load_jsonl(path: str) -> list[JsonRecord]:
     return list(read_jsonl(path))
+
+
+def resolve_output_path(
+    problem: ProblemName,
+    *,
+    seed: int,
+    output_path: str | None,
+) -> str:
+    if output_path is not None:
+        return output_path
+    return str(problem_dataset_path(problem, seed))

@@ -5,7 +5,12 @@ from typing import Any, Self
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from src.generate_data.common import instance_seed, iter_instance_indices, write_jsonl
+from src.generate_data.common import (
+    instance_seed,
+    iter_instance_indices,
+    resolve_output_path,
+    write_jsonl,
+)
 from src.generate_data.KNAPSACK.algorithms import solve_dynamic_programming
 
 
@@ -91,7 +96,12 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--start-index", type=int, default=0)
     parser.add_argument("--num-items", type=int, required=True)
     parser.add_argument("--seed", type=int, required=True)
-    parser.add_argument("--output-path", type=str, required=True)
+    parser.add_argument(
+        "--output-path",
+        type=str,
+        default=None,
+        help="Output JSONL path (default: ~/local_db/lstm_transformer/<problem>/... from seed).",
+    )
     parser.add_argument("--min-weight", type=int, default=1)
     parser.add_argument("--max-weight", type=int, default=100)
     parser.add_argument("--min-value", type=int, default=1)
@@ -112,7 +122,9 @@ def main() -> None:
         max_value=args.max_value,
         capacity_ratio=args.capacity_ratio,
         seed=args.seed,
-        output_path=args.output_path,
+        output_path=resolve_output_path(
+            "knapsack", seed=args.seed, output_path=args.output_path
+        ),
     )
     written = generate_knapsack_dataset(config)
     print(f"Wrote {written} Knapsack instances to {config.output_path}")
