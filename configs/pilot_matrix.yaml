@@ -1,0 +1,78 @@
+# Pilot matrix: small data slices + all architecture combos on available problems.
+# Run: uv run python -m src.experiments.pilot_matrix
+# Dry run: uv run python -m src.experiments.pilot_matrix execute=false
+# Execute: uv run python -m src.experiments.pilot_matrix execute=true
+
+stage: all
+problems:
+  - tsp
+  - cvrp
+  - knapsack
+  - mis
+  - max_clique
+  - vertex_cover
+encoders:
+  - attention
+decoders:
+  - attention_pointer
+  - lstm_pointer
+  - gru_pointer
+  - sigmoid_subset
+modes:
+  - supervised
+  - rl
+seeds:
+  - 1234
+
+extract: true
+execute: false
+skip_sigmoid_routing: false
+device: auto
+
+source:
+  train:
+    instances: 64000
+  validation:
+    instances: 10000
+  test:
+    instances: 10000
+
+data:
+  root: ${oc.env:HOME}/local_db/lstm_transformer
+  batch_size: 16
+  eval_batch_size: 16
+  num_workers: 0
+  train:
+    instances: 64
+    seed: 1234
+  validation:
+    instances: 16
+    seed: 4321
+  test:
+    instances: 16
+    seed: 9999
+
+paths:
+  output_root: outputs/pilot/matrix
+
+parameter_budget:
+  enabled: true
+  path: outputs/src/parameter_budget.json
+
+model:
+  d_model: 128
+  d_ff: 512
+  num_layers: 3
+  num_heads: 8
+
+trainer:
+  epochs: 2
+  steps_per_epoch: 10
+  learning_rate: 1.0e-4
+
+hydra:
+  job:
+    chdir: false
+  run:
+    dir: .
+  output_subdir: null

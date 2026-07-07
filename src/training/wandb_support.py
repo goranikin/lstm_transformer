@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Any
 
 import wandb
@@ -28,9 +26,7 @@ def build_wandb_config(
     output_dir: str,
 ) -> dict[str, Any]:
     trainable_params = sum(
-        parameter.numel()
-        for parameter in model.parameters()
-        if parameter.requires_grad
+        parameter.numel() for parameter in model.parameters() if parameter.requires_grad
     )
     total_params = sum(parameter.numel() for parameter in model.parameters())
     num_layers = int(matched_params.get("num_layers", cfg.model.num_layers))

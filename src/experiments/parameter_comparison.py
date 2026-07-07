@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 ###
 #  uv run python -m src.experiments.parameter_comparison \
 #    format=json output=outputs/src/parameter_budget.json
