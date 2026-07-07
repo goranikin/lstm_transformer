@@ -23,6 +23,8 @@ data:
   root: ${oc.env:HOME}/local_db/lstm_transformer
   batch_size: 512
   eval_batch_size: null
+  graph_batch_size: null
+  graph_eval_batch_size: null
   num_workers: 0
   train:
     instances: 64000
