@@ -10,7 +10,7 @@ decoder: attention_pointer
 mode: supervised
 
 data:
-  root: data
+  root: ${oc.env:HOME}/local_db/lstm_transformer
   use_default_paths: true
   train_path: null
   val_path: null
@@ -58,6 +58,16 @@ trainer:
   log_every: 25
   progress_bar: true
   save_checkpoints: true
+
+wandb:
+  enabled: true
+  project: lstm_transformer
+  entity: goranikin-my-project
+  name: null
+  group: null
+  tags: []
+  mode: online
+  train_eval_batches: 10
 
 hydra:
   job:

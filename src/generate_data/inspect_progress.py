@@ -7,6 +7,8 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
+from src.paths import DATA_ROOT
+
 TRAIN_TOTAL = 64_000
 TRAIN_CHUNK = 8_000
 TRAIN_PARTS = 8
@@ -233,8 +235,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--data-dir",
         type=Path,
-        default=Path("data"),
-        help="Root data directory (default: data)",
+        default=DATA_ROOT,
+        help=f"Root data directory (default: {DATA_ROOT})",
     )
     parser.add_argument(
         "--watch",

@@ -113,6 +113,59 @@ def aggregate_metrics(items: list[BatchMetrics]) -> EvaluationMetrics:
     )
 
 
+def wandb_metrics(
+    metrics: BatchMetrics | EvaluationMetrics,
+    prefix: str,
+) -> dict[str, float | int]:
+    base = f"{prefix}/" if prefix else ""
+    payload: dict[str, float | int] = {
+        f"{base}count": metrics.count,
+        f"{base}objective": metrics.objective,
+        f"{base}feasibility_rate": metrics.feasibility_rate,
+        f"{base}inference_time_sec": metrics.inference_time_sec,
+    }
+    if metrics.gap is not None:
+        payload[f"{base}optimal_gap"] = metrics.gap
+    if metrics.gap_pct is not None:
+        payload[f"{base}optimal_gap_pct"] = metrics.gap_pct
+    if metrics.target_objective is not None:
+        payload[f"{base}target_objective"] = metrics.target_objective
+    return payload
+
+
+def wandb_supervised_step_metrics(
+    *,
+    loss: float,
+    metrics: BatchMetrics,
+    epoch: int,
+) -> dict[str, float | int]:
+    return {
+        "train/sl/loss": loss,
+        "train/epoch": epoch,
+        **wandb_metrics(metrics, "train/sl"),
+    }
+
+
+def wandb_rl_step_metrics(
+    *,
+    policy_loss: float,
+    metrics: BatchMetrics,
+    reward: torch.Tensor,
+    advantage: torch.Tensor,
+    baseline: torch.Tensor,
+    epoch: int,
+) -> dict[str, float | int]:
+    return {
+        "train/rl/policy_loss": policy_loss,
+        "train/rl/reward": float(reward.mean().item()),
+        "train/rl/advantage": float(advantage.mean().item()),
+        "train/rl/advantage_std": float(advantage.std(unbiased=False).item()),
+        "train/rl/baseline": float(baseline.mean().item()),
+        "train/epoch": epoch,
+        **wandb_metrics(metrics, "train/rl"),
+    }
+
+
 def seed_variance(values: list[float]) -> dict[str, float]:
     if not values:
         return {"mean": 0.0, "std": 0.0}

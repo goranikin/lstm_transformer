@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import shlex
 import subprocess
 from collections.abc import Sequence
@@ -19,6 +17,7 @@ from src.constants import (
     ProblemName,
 )
 from src.experiments.parameter_comparison import config_sequence, validate_values
+from src.paths import resolve_data_root
 
 STAGES: dict[str, tuple[ProblemName, ...]] = {
     "all": PROBLEM_NAMES,
@@ -63,7 +62,7 @@ def run_from_config(cfg: DictConfig) -> list[list[str]]:
         decoders=decoders,
         modes=modes,
         seeds=seeds,
-        data_root=str(cfg.data.root),
+        data_root=str(resolve_data_root(cfg.data.root)),
         train_instances=int(cfg.data.train.instances),
         train_seed=int(cfg.data.train.seed),
         val_instances=int(cfg.data.validation.instances),
@@ -85,6 +84,7 @@ def run_from_config(cfg: DictConfig) -> list[list[str]]:
         device=str(cfg.device),
         num_workers=int(cfg.data.num_workers),
         skip_sigmoid_routing=bool(cfg.skip_sigmoid_routing),
+        stage=stage,
     )
     action = "Running" if bool(cfg.execute) else "Dry run"
     print(f"{action} {len(commands)} command(s).")
@@ -133,6 +133,7 @@ def build_commands(
     device: str,
     num_workers: int,
     skip_sigmoid_routing: bool,
+    stage: str,
 ) -> list[list[str]]:
     commands: list[list[str]] = []
     for seed in seeds:
@@ -186,6 +187,7 @@ def build_commands(
                             f"paths.output_dir={output_dir}",
                             f"parameter_budget.enabled={str(use_parameter_budget).lower()}",
                             f"parameter_budget.path={parameter_budget}",
+                            f"wandb.group=matrix/{stage}/seed_{seed}",
                         ]
                         if steps_per_epoch is not None:
                             command.append(f"trainer.steps_per_epoch={steps_per_epoch}")
@@ -214,17 +216,9 @@ def problem_paths(
     directory = PROBLEM_PATH_DIR[problem]
     prefix = PROBLEM_FILE_PREFIX[problem]
     return {
-        "train": (
-            f"{data_root}/{directory}/"
-            f"{prefix}_train_{train_instances}_seed{train_seed}.jsonl"
-        ),
-        "val": (
-            f"{data_root}/{directory}/{prefix}_val_{val_instances}_seed{val_seed}.jsonl"
-        ),
-        "test": (
-            f"{data_root}/{directory}/"
-            f"{prefix}_test_{test_instances}_seed{test_seed}.jsonl"
-        ),
+        "train": f"{data_root}/{directory}/{prefix}_seed{train_seed}.jsonl",
+        "val": f"{data_root}/{directory}/{prefix}_val_seed{val_seed}.jsonl",
+        "test": f"{data_root}/{directory}/{prefix}_test_seed{test_seed}.jsonl",
     }
 
 

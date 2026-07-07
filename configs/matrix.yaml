@@ -20,7 +20,7 @@ execute: false
 skip_sigmoid_routing: false
 
 data:
-  root: data
+  root: ${oc.env:HOME}/local_db/lstm_transformer
   batch_size: 512
   eval_batch_size: null
   num_workers: 0

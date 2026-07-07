@@ -16,7 +16,11 @@ from src.training.metrics import (
     EvaluationMetrics,
     aggregate_metrics,
     batch_metrics,
+    wandb_metrics,
+    wandb_rl_step_metrics,
+    wandb_supervised_step_metrics,
 )
+from src.training.wandb_support import log as wandb_log
 from src.utils import move_to_device, timer
 
 
@@ -35,6 +39,8 @@ class TrainingConfig:
     progress_bar: bool = True
     output_dir: str = "outputs/src"
     save_checkpoints: bool = True
+    wandb_log: bool = False
+    wandb_train_eval_batches: int = 10
 
 
 @dataclass
@@ -99,10 +105,21 @@ class Trainer:
                         row["rollout_updated"] = updated
                 result.history.append(row)
                 self._write_history(result)
+                if self.config.wandb_log:
+                    self._log_epoch_metrics(row)
+                    self._log_train_eval_metrics(epoch + 1)
                 if self.config.save_checkpoints:
                     self.save_checkpoint("last.pt", epoch + 1)
         result.training_time_sec = elapsed["elapsed"]
         self._write_history(result)
+        if self.config.wandb_log:
+            wandb_log(
+                {
+                    "train/training_time_sec": result.training_time_sec,
+                    "train/best_validation_objective": result.best_validation_objective,
+                },
+                step=self.global_step,
+            )
         return result
 
     def _train_supervised_epoch(self, epoch: int) -> float:
@@ -125,7 +142,22 @@ class Trainer:
             self.global_step += 1
             losses.append(float(loss.detach().item()))
             if step % self.config.log_every == 0:
-                iterator.set_postfix(loss=sum(losses) / len(losses))
+                avg_loss = sum(losses) / len(losses)
+                iterator.set_postfix(loss=avg_loss)
+                if self.config.wandb_log:
+                    with torch.no_grad():
+                        output = self.model(batch, decode_type="greedy")
+                        step_metrics = batch_metrics(
+                            self.model.problem, batch, output, 0.0
+                        )
+                    wandb_log(
+                        wandb_supervised_step_metrics(
+                            loss=avg_loss,
+                            metrics=step_metrics,
+                            epoch=epoch + 1,
+                        ),
+                        step=self.global_step,
+                    )
         return sum(losses) / max(len(losses), 1)
 
     def _train_rl_epoch(self, epoch: int) -> float:
@@ -158,7 +190,23 @@ class Trainer:
             self.global_step += 1
             losses.append(float(loss.detach().item()))
             if step % self.config.log_every == 0:
-                iterator.set_postfix(loss=sum(losses) / len(losses))
+                avg_loss = sum(losses) / len(losses)
+                iterator.set_postfix(loss=avg_loss)
+                if self.config.wandb_log:
+                    step_metrics = batch_metrics(
+                        self.model.problem, batch, output, 0.0
+                    )
+                    wandb_log(
+                        wandb_rl_step_metrics(
+                            policy_loss=avg_loss,
+                            metrics=step_metrics,
+                            reward=output.reward,
+                            advantage=advantage,
+                            baseline=baseline,
+                            epoch=epoch + 1,
+                        ),
+                        step=self.global_step,
+                    )
         return sum(losses) / max(len(losses), 1)
 
     def _baseline_value(
@@ -180,6 +228,23 @@ class Trainer:
         self.model.eval()
         items = []
         for batch in loader:
+            batch = move_to_device(batch, self.device)
+            with timer() as elapsed:
+                output = self.model(batch, decode_type="greedy")
+            items.append(
+                batch_metrics(self.model.problem, batch, output, elapsed["elapsed"])
+            )
+        return aggregate_metrics(items)
+
+    @torch.no_grad()
+    def _evaluate_subset(
+        self, loader: DataLoader, *, max_batches: int
+    ) -> EvaluationMetrics:
+        self.model.eval()
+        items = []
+        for batch_index, batch in enumerate(loader):
+            if batch_index >= max_batches:
+                break
             batch = move_to_device(batch, self.device)
             with timer() as elapsed:
                 output = self.model(batch, decode_type="greedy")
@@ -215,6 +280,47 @@ class Trainer:
             path,
         )
         return path
+
+    def _log_epoch_metrics(self, row: dict[str, Any]) -> None:
+        metrics: dict[str, Any] = {"epoch": row["epoch"]}
+        mode_prefix = "sl" if self.config.mode == "supervised" else "rl"
+        val_key_map = {
+            "val/gap": "val/optimal_gap",
+            "val/gap_pct": "val/optimal_gap_pct",
+        }
+        for key, value in row.items():
+            if key == "epoch":
+                continue
+            if key == "train_loss":
+                metrics[f"train/{mode_prefix}/loss_epoch"] = value
+            elif key == "train_policy_loss":
+                metrics["train/rl/policy_loss_epoch"] = value
+            elif key == "rollout_updated":
+                metrics["train/rl/rollout_updated"] = float(value)
+            elif key in val_key_map:
+                metrics[val_key_map[key]] = value
+            elif key.startswith("val/"):
+                metrics[key] = value
+            else:
+                metrics[key] = value
+        wandb_log(metrics, step=self.global_step)
+
+    def _log_train_eval_metrics(self, epoch: int) -> None:
+        was_training = self.model.training
+        metrics = self._evaluate_subset(
+            self.train_loader,
+            max_batches=self.config.wandb_train_eval_batches,
+        )
+        if was_training:
+            self.model.train()
+        mode_prefix = "sl" if self.config.mode == "supervised" else "rl"
+        wandb_log(
+            {
+                "epoch": epoch,
+                **wandb_metrics(metrics, f"train/{mode_prefix}/eval"),
+            },
+            step=self.global_step,
+        )
 
     def _write_history(self, result: TrainingResult) -> None:
         payload = {

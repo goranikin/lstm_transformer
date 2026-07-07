@@ -9,6 +9,7 @@ from typing import Any, Callable, Iterable
 from tqdm import tqdm
 
 from src.generate_data.common import instance_seed
+from src.paths import PUBLIC_DATA_ROOT, RAW_ML4CO_ROOT
 
 TARGET_COUNTS = {
     "train": 64_000,
@@ -306,8 +307,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Convert ML4CO-Bench-101-SL txt data into project JSONL splits."
     )
-    parser.add_argument("--raw-root", type=Path, default=Path("raw/ml4co"))
-    parser.add_argument("--output-root", type=Path, default=Path("data_public"))
+    parser.add_argument("--raw-root", type=Path, default=RAW_ML4CO_ROOT)
+    parser.add_argument("--output-root", type=Path, default=PUBLIC_DATA_ROOT)
     parser.add_argument(
         "--dataset-subdir",
         type=str,

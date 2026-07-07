@@ -10,7 +10,7 @@ decoder: attention_pointer
 mode: supervised
 
 data:
-  root: data
+  root: ${oc.env:HOME}/local_db/lstm_transformer
   use_default_paths: true
   train_path: null
   val_path: null

@@ -20,4 +20,4 @@ data/
 
 .ruff_cache/
 
-data_public_84k/
+data_public_*

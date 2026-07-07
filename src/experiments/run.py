@@ -29,7 +29,12 @@ from src.experiments.parameter_comparison import (
     resolve_target,
 )
 from src.model import NCOModel
+from src.paths import resolve_data_root
 from src.training import Trainer, TrainingConfig
+from src.training.wandb_support import finish as finish_wandb
+from src.training.wandb_support import init_from_config as init_wandb
+from src.training.wandb_support import log as wandb_log
+from src.training.metrics import wandb_metrics
 from src.utils import resolve_device, set_seed
 
 
@@ -120,6 +125,14 @@ def run_from_config(cfg: DictConfig) -> dict[str, Any]:
         progress_bar=bool(cfg.trainer.progress_bar),
         output_dir=output_dir,
         save_checkpoints=bool(cfg.trainer.save_checkpoints),
+        wandb_log=init_wandb(
+            cfg,
+            output_dir=output_dir,
+            run_name=cfg.wandb.name
+            or f"{problem}_{encoder}_{decoder}_{cfg.mode}_seed{cfg.seed}",
+            default_tags=[problem, encoder, decoder, str(cfg.mode)],
+        ),
+        wandb_train_eval_batches=int(cfg.wandb.train_eval_batches),
     )
     print(
         "run="
@@ -151,11 +164,16 @@ def run_from_config(cfg: DictConfig) -> dict[str, Any]:
         "history": result.history,
     }
     if test_loader is not None:
-        payload["test"] = trainer.evaluate(test_loader).to_dict("test")
+        test_eval = trainer.evaluate(test_loader)
+        test_metrics = test_eval.to_dict("test")
+        payload["test"] = test_metrics
+        if train_config.wandb_log:
+            wandb_log(wandb_metrics(test_eval, "test"), step=trainer.global_step)
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     with open(Path(output_dir) / "result.json", "w", encoding="utf-8") as handle:
         json.dump(payload, handle, indent=2, sort_keys=True)
     print(json.dumps(payload, indent=2, sort_keys=True))
+    finish_wandb()
     return payload
 
 
@@ -184,7 +202,7 @@ def validate_config(cfg: DictConfig) -> None:
 def resolve_data_path(cfg: DictConfig, *, split: str) -> str | None:
     configured = cfg.data.get(f"{split}_path")
     if configured is not None:
-        return str(configured)
+        return str(Path(configured).expanduser())
     if not bool(cfg.data.use_default_paths):
         if split == "train":
             raise ValueError("data.train_path is required when use_default_paths=false")
@@ -201,10 +219,12 @@ def resolve_data_path(cfg: DictConfig, *, split: str) -> str | None:
     else:
         raise ValueError(f"Unsupported split: {split}")
     problem = str(cfg.problem)
-    return (
-        f"{cfg.data.root}/{PROBLEM_PATH_DIR[problem]}/"
-        f"{PROBLEM_FILE_PREFIX[problem]}_{split}_{instances}_seed{seed}.jsonl"
-    )
+    prefix = PROBLEM_FILE_PREFIX[problem]
+    directory = PROBLEM_PATH_DIR[problem]
+    data_root = resolve_data_root(cfg.data.root)
+    if split == "train":
+        return str(data_root / directory / f"{prefix}_seed{seed}.jsonl")
+    return str(data_root / directory / f"{prefix}_{split}_seed{seed}.jsonl")
 
 
 def resolve_output_dir(cfg: DictConfig) -> str:
