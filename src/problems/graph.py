@@ -276,13 +276,8 @@ class VertexCoverProblem(GraphSubsetProblem):
     def check_feasible(self, batch: dict[str, Any], solution: dict[str, torch.Tensor]):
         adjacency = self.require_tensor(batch, "adjacency").bool()
         selected = solution["selected_mask"].bool()
-        feasible = torch.ones(
-            selected.size(0), dtype=torch.bool, device=selected.device
-        )
-        for row in range(selected.size(0)):
-            covered = selected[row].unsqueeze(0) | selected[row].unsqueeze(1)
-            feasible[row] = not bool((adjacency[row] & ~covered).any())
-        return feasible
+        covered = selected.unsqueeze(-1) | selected.unsqueeze(-2)
+        return ~((adjacency & ~covered).any(dim=(-2, -1)))
 
     def repair_solution(
         self,
@@ -290,33 +285,38 @@ class VertexCoverProblem(GraphSubsetProblem):
         scores: torch.Tensor,
         proposed_mask: torch.Tensor | None = None,
     ) -> dict[str, torch.Tensor]:
+        # Vectorized repair: the previous Python O(batch * n^2) loops with
         adjacency = self.require_tensor(batch, "adjacency").bool()
         selected = (
             proposed_mask.clone().bool() if proposed_mask is not None else scores > 0
         )
-        for row in range(scores.size(0)):
-            for u in range(scores.size(1)):
-                for v in range(u + 1, scores.size(1)):
-                    if bool(adjacency[row, u, v]) and not (
-                        bool(selected[row, u]) or bool(selected[row, v])
-                    ):
-                        pick = u if scores[row, u] >= scores[row, v] else v
-                        selected[row, pick] = True
-            for node in scores[row].argsort().tolist():
-                if not bool(selected[row, node]):
-                    continue
-                candidate = selected[row].clone()
-                candidate[node] = False
-                covered = candidate.unsqueeze(0) | candidate.unsqueeze(1)
-                if not bool((adjacency[row] & ~covered).any()):
-                    selected[row, node] = False
+        covered = selected.unsqueeze(-1) | selected.unsqueeze(-2)
+        uncovered = torch.triu(adjacency & ~covered, diagonal=1)
+        prefer_u = scores.unsqueeze(-1) >= scores.unsqueeze(-2)
+        selected = selected | (uncovered & prefer_u).any(dim=-1)
+        selected = selected | (uncovered & ~prefer_u).any(dim=-2)
+
+        batch_size, node_count = selected.shape
+        rows = torch.arange(batch_size, device=scores.device)
+        for node in scores.argsort(dim=-1).unbind(dim=-1):
+            was_selected = selected[rows, node]
+            if not bool(was_selected.any()):
+                continue
+            candidate = selected.clone()
+            candidate[rows, node] = False
+            covered = candidate.unsqueeze(-1) | candidate.unsqueeze(-2)
+            still_cover = ~((adjacency & ~covered).any(dim=(-2, -1)))
+            drop = was_selected & still_cover
+            selected[rows, node] = selected[rows, node] & ~drop
+
         actions = []
-        for row in range(scores.size(0)):
+        stop = node_count
+        for row in range(batch_size):
             row_actions = (
                 torch.nonzero(selected[row], as_tuple=False).flatten().tolist()
             )
-            row_actions.append(scores.size(1))
-            actions.append(_pad_actions(row_actions, scores.size(1) + 1, scores.device))
+            row_actions.append(stop)
+            actions.append(_pad_actions(row_actions, stop + 1, scores.device))
         return {"actions": torch.stack(actions), "selected_mask": selected}
 
 
