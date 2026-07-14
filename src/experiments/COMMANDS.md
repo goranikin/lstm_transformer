@@ -1,12 +1,12 @@
-GPU 0 — routing + hybrid (72 runs)
-tsp, cvrp, orienteering × 4 decoders × 2 modes × 3 seeds
+GPU 0 — routing + hybrid (90 runs)
+tsp, cvrp, orienteering × 5 decoders × 2 modes × 3 seeds
 ```bash
 CUDA_VISIBLE_DEVICES=0 uv run python -m src.experiments.matrix \
   'problems=[tsp,cvrp,orienteering]' \
   execute=true
 ```
-GPU 1 — subset (96 runs)
-knapsack, mis, max_clique, vertex_cover × 4 decoders × 2 modes × 3 seeds
+GPU 1 — subset (120 runs)
+knapsack, mis, max_clique, vertex_cover × 5 decoders × 2 modes × 3 seeds
 ```bash
 CUDA_VISIBLE_DEVICES=1 uv run python -m src.experiments.matrix \
   stage=subset \

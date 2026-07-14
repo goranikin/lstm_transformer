@@ -34,8 +34,8 @@ src/
     registry.py             Problem factory
 
   models/
-    encoders.py             AttentionEncoder and LSTMEncoder
-    decoders.py             Attention, LSTM, GRU pointer decoders and sigmoid decoder
+    encoders.py             AttentionEncoder
+    decoders.py             Attention, LSTM, GRU, Transformer pointer and sigmoid decoders
 
   training/
     trainer.py              Supervised and RL training loop
@@ -96,12 +96,13 @@ Decoders:
 - `attention_pointer`
 - `lstm_pointer`
 - `gru_pointer`
+- `transformer_pointer`
 - `sigmoid_subset`
 
 The primary experiment matrix is:
 
 ```text
-1 encoder x 4 decoders x 7 problems x 2 modes x 3 seeds = 168 runs
+1 encoder x 5 decoders x 7 problems x 2 modes x 3 seeds = 210 runs
 ```
 
 Use `src.experiments.matrix` to stage or dry-run those commands.

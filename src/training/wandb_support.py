@@ -31,6 +31,11 @@ def build_wandb_config(
     total_params = sum(parameter.numel() for parameter in model.parameters())
     num_layers = int(matched_params.get("num_layers", cfg.model.num_layers))
     num_heads = int(matched_params.get("num_heads", cfg.model.num_heads))
+    transformer_decoder_layers = int(
+        matched_params.get(
+            "transformer_decoder_layers", cfg.model.transformer_decoder_layers
+        )
+    )
     d_model = int(matched_params["d_model"])
     d_ff = int(matched_params["d_ff"])
 
@@ -64,6 +69,7 @@ def build_wandb_config(
             "d_ff": d_ff,
             "num_layers": num_layers,
             "num_heads": num_heads,
+            "transformer_decoder_layers": transformer_decoder_layers,
             "dropout": float(cfg.model.dropout),
             "tanh_clip": float(cfg.model.tanh_clip),
             "trainable_params": trainable_params,

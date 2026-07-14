@@ -105,6 +105,7 @@ def run_from_config(cfg: DictConfig) -> dict[str, Any]:
         num_layers=int(cfg.model.num_layers),
         num_heads=int(cfg.model.num_heads),
         d_ff=matched_params["d_ff"],
+        transformer_decoder_layers=int(cfg.model.transformer_decoder_layers),
         dropout=float(cfg.model.dropout),
         tanh_clip=float(cfg.model.tanh_clip),
     )
@@ -209,6 +210,8 @@ def validate_config(cfg: DictConfig) -> None:
         )
     if has_d_model and int(cfg.model.d_model) % int(cfg.model.num_heads) != 0:
         raise ValueError("model.d_model must be divisible by model.num_heads")
+    if int(cfg.model.transformer_decoder_layers) <= 0:
+        raise ValueError("model.transformer_decoder_layers must be positive")
 
 
 def resolve_data_path(cfg: DictConfig, *, split: str) -> str | None:
@@ -256,6 +259,7 @@ def resolve_model_parameters(
 ) -> dict[str, int | float | str | None]:
     num_layers = int(cfg.model.num_layers)
     num_heads = int(cfg.model.num_heads)
+    transformer_decoder_layers = int(cfg.model.transformer_decoder_layers)
     input_dim = INPUT_DIM_BY_PROBLEM[problem]
 
     if not bool(cfg.parameter_budget.enabled):
@@ -271,6 +275,7 @@ def resolve_model_parameters(
             d_ff=d_ff,
             num_layers=num_layers,
             num_heads=num_heads,
+            transformer_decoder_layers=transformer_decoder_layers,
             base_d_model=d_model,
             base_d_ff=d_ff,
             base_params=matched_params,
@@ -300,6 +305,7 @@ def resolve_model_parameters(
             d_ff=d_ff,
             num_layers=num_layers,
             num_heads=num_heads,
+            transformer_decoder_layers=transformer_decoder_layers,
             base_d_model=settings.d_model,
             base_d_ff=settings.d_ff or settings.d_model * settings.d_ff_multiplier,
             base_params=base_params,
@@ -317,6 +323,7 @@ def resolve_model_parameters(
         target_params=none_or_int(cfg.parameter_budget.target_params),
         num_layers=num_layers,
         num_heads=num_heads,
+        transformer_decoder_layers=transformer_decoder_layers,
     )
     if row is None:
         if bool(cfg.parameter_budget.strict):
@@ -333,6 +340,7 @@ def resolve_model_parameters(
         d_ff=int(row["matched_d_ff"]),
         num_layers=num_layers,
         num_heads=num_heads,
+        transformer_decoder_layers=transformer_decoder_layers,
         base_d_model=row.get("base_d_model"),
         base_d_ff=row.get("base_d_ff"),
         base_params=row.get("base_params"),
@@ -352,6 +360,7 @@ def finalize_resolved_parameters(
     d_ff: int,
     num_layers: int,
     num_heads: int,
+    transformer_decoder_layers: int,
     base_d_model: int | None,
     base_d_ff: int | None,
     base_params: int | None,
@@ -367,6 +376,7 @@ def finalize_resolved_parameters(
             d_ff=d_ff,
             num_layers=num_layers,
             num_heads=num_heads,
+            transformer_decoder_layers=transformer_decoder_layers,
         )
     return {
         "source": source,
@@ -375,6 +385,7 @@ def finalize_resolved_parameters(
         "d_ff": d_ff,
         "num_layers": num_layers,
         "num_heads": num_heads,
+        "transformer_decoder_layers": transformer_decoder_layers,
         "base_d_model": base_d_model,
         "base_d_ff": base_d_ff,
         "base_params": base_params,
@@ -392,10 +403,12 @@ def build_model_command_args(
     d_ff: int,
     num_layers: int,
     num_heads: int,
+    transformer_decoder_layers: int,
 ) -> str:
     return (
         f"model.d_model={d_model} model.d_ff={d_ff} "
-        f"model.num_layers={num_layers} model.num_heads={num_heads}"
+        f"model.num_layers={num_layers} model.num_heads={num_heads} "
+        f"model.transformer_decoder_layers={transformer_decoder_layers}"
     )
 
 
@@ -408,6 +421,7 @@ def find_budget_row(
     target_params: int | None,
     num_layers: int,
     num_heads: int,
+    transformer_decoder_layers: int,
 ) -> dict[str, Any] | None:
     if not path.is_file():
         return None
@@ -418,6 +432,15 @@ def find_budget_row(
         if int(settings.get("num_layers", num_layers)) != num_layers:
             return None
         if int(settings.get("num_heads", num_heads)) != num_heads:
+            return None
+        if (
+            int(
+                settings.get(
+                    "transformer_decoder_layers", transformer_decoder_layers
+                )
+            )
+            != transformer_decoder_layers
+        ):
             return None
     rows = payload.get("rows", [])
     matches = [
@@ -493,6 +516,7 @@ def compute_budget_row(
             d_ff=matched_d_ff,
             num_layers=settings.num_layers,
             num_heads=settings.num_heads,
+            transformer_decoder_layers=settings.transformer_decoder_layers,
         ),
     }
 
@@ -508,6 +532,7 @@ def parameter_budget_settings(cfg: DictConfig) -> ParameterComparisonSettings:
         d_ff_multiplier=int(cfg.parameter_budget.search.d_ff_multiplier),
         num_layers=int(cfg.model.num_layers),
         num_heads=int(cfg.model.num_heads),
+        transformer_decoder_layers=int(cfg.model.transformer_decoder_layers),
         dropout=float(cfg.model.dropout),
         tanh_clip=float(cfg.model.tanh_clip),
         target_params=none_or_int(cfg.parameter_budget.target_params),
@@ -537,6 +562,7 @@ def count_current_params(
         num_layers=int(cfg.model.num_layers),
         num_heads=int(cfg.model.num_heads),
         d_ff=d_ff,
+        transformer_decoder_layers=int(cfg.model.transformer_decoder_layers),
         dropout=float(cfg.model.dropout),
         tanh_clip=float(cfg.model.tanh_clip),
     )

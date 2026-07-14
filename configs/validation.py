@@ -35,6 +35,8 @@ def validate_config(cfg: DictConfig) -> None:
         )
     if has_d_model and int(cfg.model.d_model) % int(cfg.model.num_heads) != 0:
         raise ValueError("model.d_model must be divisible by model.num_heads")
+    if int(cfg.model.transformer_decoder_layers) <= 0:
+        raise ValueError("model.transformer_decoder_layers must be positive")
 
 
 def config_to_dict(cfg: DictConfig) -> dict[str, Any]:

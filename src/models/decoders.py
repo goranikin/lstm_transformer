@@ -174,15 +174,13 @@ class AttentionPointerDecoder(AutoregressiveDecoder):
         keys = self.key_proj(h)
         values = self.value_proj(h)
         node_mask = mask[:, : h.size(1)]
-        attn_logits = torch.matmul(query.unsqueeze(1), keys.transpose(1, 2)).squeeze(1)
+        attn_logits = torch.einsum("bd,bnd->bn", query, keys)
         attn_logits = attn_logits / math.sqrt(self.d_model)
         attn = torch.softmax(attn_logits.masked_fill(node_mask, float("-inf")), dim=-1)
         attn = torch.nan_to_num(attn, nan=0.0)
-        glimpse = self.glimpse_proj(torch.bmm(attn.unsqueeze(1), values).squeeze(1))
+        glimpse = self.glimpse_proj(torch.einsum("bn,bnd->bd", attn, values))
         logit_keys = self._append_stop_key(keys, self.stop_key, mask.size(1))
-        logits = torch.matmul(glimpse.unsqueeze(1), logit_keys.transpose(1, 2)).squeeze(
-            1
-        )
+        logits = torch.einsum("bd,bad->ba", glimpse, logit_keys)
         logits = logits / math.sqrt(self.d_model)
         if self.tanh_clip > 0:
             logits = self.tanh_clip * torch.tanh(logits)
@@ -273,9 +271,7 @@ class RecurrentPointerDecoder(AutoregressiveDecoder):
                 raise RuntimeError("GRU decoder is misconfigured")
             self._hidden = self.cell(decoder_input, self._hidden)
         keys = self._append_stop_key(self.key_proj(h), self.stop_key, mask.size(1))
-        logits = torch.matmul(self._hidden.unsqueeze(1), keys.transpose(1, 2)).squeeze(
-            1
-        )
+        logits = torch.einsum("bd,bad->ba", self._hidden, keys)
         logits = logits / math.sqrt(self.d_model)
         if self.tanh_clip > 0:
             logits = self.tanh_clip * torch.tanh(logits)
@@ -290,6 +286,171 @@ class LSTMPointerDecoder(RecurrentPointerDecoder):
 class GRUPointerDecoder(RecurrentPointerDecoder):
     def __init__(self, d_model: int, context_dim: int, tanh_clip: float = 10.0) -> None:
         super().__init__(d_model, context_dim, cell_kind="gru", tanh_clip=tanh_clip)
+
+
+class CausalTransformerLayerCell(nn.Module):
+    """Advance one pre-normalized Transformer layer by one causal token."""
+
+    def __init__(
+        self,
+        d_model: int,
+        num_heads: int,
+        d_ff: int,
+        dropout: float,
+    ) -> None:
+        super().__init__()
+        self.self_attn = nn.MultiheadAttention(
+            d_model,
+            num_heads,
+            dropout=dropout,
+            batch_first=True,
+        )
+        self.linear1 = nn.Linear(d_model, d_ff)
+        self.linear2 = nn.Linear(d_ff, d_model)
+        self.norm1 = nn.LayerNorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model)
+        self.activation_dropout = nn.Dropout(dropout)
+        self.attention_dropout = nn.Dropout(dropout)
+        self.output_dropout = nn.Dropout(dropout)
+
+    def forward(
+        self,
+        current: torch.Tensor,
+        history: torch.Tensor | None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        layer_history = (
+            current if history is None else torch.cat([history, current], dim=1)
+        )
+        normalized_history = self.norm1(layer_history)
+        normalized_current = normalized_history[:, -current.size(1) :]
+        attention, _ = self.self_attn(
+            normalized_current,
+            normalized_history,
+            normalized_history,
+            need_weights=False,
+        )
+        output = current + self.attention_dropout(attention)
+        feed_forward = self.linear2(
+            self.activation_dropout(F.relu(self.linear1(self.norm2(output))))
+        )
+        return output + self.output_dropout(feed_forward), layer_history
+
+
+class TransformerPointerDecoder(AutoregressiveDecoder):
+    """Incremental causal Transformer used as a recurrent-style pointer cell.
+
+    Every layer retains its earlier input states for the current rollout. A new
+    token attends only to those earlier states and itself, so the latest output
+    is equivalent to causal decoding without recomputing previous query and
+    feed-forward outputs. Cached tensors remain attached to autograd during
+    training.
+    """
+
+    def __init__(
+        self,
+        d_model: int,
+        context_dim: int,
+        *,
+        num_heads: int = 8,
+        d_ff: int = 512,
+        num_layers: int = 1,
+        dropout: float = 0.0,
+        tanh_clip: float = 10.0,
+    ) -> None:
+        super().__init__()
+        if num_layers <= 0:
+            raise ValueError("Transformer pointer num_layers must be positive")
+        if num_heads <= 0 or d_model % num_heads != 0:
+            raise ValueError("d_model must be divisible by Transformer pointer heads")
+        self.d_model = d_model
+        self.tanh_clip = tanh_clip
+        self.input_proj = nn.Linear(d_model + context_dim, d_model)
+        self.initial_proj = nn.Linear(d_model, d_model)
+        self.layers = nn.ModuleList(
+            [
+                CausalTransformerLayerCell(
+                    d_model=d_model,
+                    num_heads=num_heads,
+                    d_ff=d_ff,
+                    dropout=dropout,
+                )
+                for _ in range(num_layers)
+            ]
+        )
+        self.output_norm = nn.LayerNorm(d_model)
+        self.key_proj = nn.Linear(d_model, d_model, bias=False)
+        self.prev_placeholder = nn.Parameter(torch.empty(d_model))
+        self.stop_key = nn.Parameter(torch.empty(d_model))
+        self._layer_histories: list[torch.Tensor | None] | None = None
+        self._next_position = 0
+        self.reset_parameters()
+
+    def reset_parameters(self) -> None:
+        for module in (self.input_proj, self.initial_proj, self.key_proj):
+            nn.init.xavier_uniform_(module.weight)
+            if module.bias is not None:
+                nn.init.zeros_(module.bias)
+        nn.init.normal_(self.prev_placeholder, std=0.02)
+        nn.init.normal_(self.stop_key, std=0.02)
+
+    def decode(
+        self,
+        encoder_output: EncoderOutput,
+        problem_state: ProblemDecodeState,
+        decode_type: DecodeType,
+    ) -> SolutionOutput:
+        initial_token = torch.tanh(
+            self.initial_proj(encoder_output.graph_embedding)
+        )
+        self._layer_histories = [None] * len(self.layers)
+        self._next_position = 0
+        try:
+            self._advance_history(initial_token)
+            return super().decode(encoder_output, problem_state, decode_type)
+        finally:
+            self._layer_histories = None
+            self._next_position = 0
+
+    def step_logits(
+        self,
+        encoder_output: EncoderOutput,
+        problem_state: ProblemDecodeState,
+        mask: torch.Tensor,
+    ) -> torch.Tensor:
+        if self._layer_histories is None:
+            raise RuntimeError("Transformer decoder history is not initialized")
+        h = encoder_output.node_embeddings
+        state = problem_state.state
+        prev = self._action_embeddings(h, state.prev_action, self.prev_placeholder)
+        context = problem_state.problem.context_features(state).to(h.dtype)
+        decoder_input = self.input_proj(torch.cat([prev, context], dim=-1))
+        decoder_state = self._advance_history(decoder_input)
+
+        keys = self._append_stop_key(self.key_proj(h), self.stop_key, mask.size(1))
+        logits = torch.einsum("bd,bad->ba", decoder_state, keys)
+        logits = logits / math.sqrt(self.d_model)
+        if self.tanh_clip > 0:
+            logits = self.tanh_clip * torch.tanh(logits)
+        return logits
+
+    def _advance_history(self, token: torch.Tensor) -> torch.Tensor:
+        if self._layer_histories is None:
+            raise RuntimeError("Transformer decoder history is not initialized")
+        positions = _sinusoidal_positions(
+            self._next_position + 1,
+            self.d_model,
+            device=token.device,
+            dtype=token.dtype,
+        )
+        current = (token + positions[self._next_position]).unsqueeze(1)
+        for index, layer in enumerate(self.layers):
+            current, layer_history = layer(
+                current,
+                self._layer_histories[index],
+            )
+            self._layer_histories[index] = layer_history
+        self._next_position += 1
+        return self.output_norm(current.squeeze(1))
 
 
 class SigmoidSubsetDecoder(nn.Module):
@@ -339,3 +500,22 @@ class SigmoidSubsetDecoder(nn.Module):
             logits=logits,
             reward=problem_state.problem.reward(objective),
         )
+
+
+def _sinusoidal_positions(
+    length: int,
+    d_model: int,
+    *,
+    device: torch.device,
+    dtype: torch.dtype,
+) -> torch.Tensor:
+    positions = torch.arange(length, device=device, dtype=torch.float32).unsqueeze(1)
+    frequency = torch.exp(
+        torch.arange(0, d_model, 2, device=device, dtype=torch.float32)
+        * (-math.log(10_000.0) / d_model)
+    )
+    encoding = torch.zeros(length, d_model, device=device, dtype=torch.float32)
+    encoding[:, 0::2] = torch.sin(positions * frequency)
+    odd_width = encoding[:, 1::2].size(1)
+    encoding[:, 1::2] = torch.cos(positions * frequency[:odd_width])
+    return encoding.to(dtype=dtype)

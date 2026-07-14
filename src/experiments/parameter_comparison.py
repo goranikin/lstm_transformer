@@ -44,6 +44,7 @@ class ParameterComparisonSettings:
     d_model: int
     num_layers: int
     num_heads: int
+    transformer_decoder_layers: int
     d_ff: int | None
     d_ff_multiplier: int
     dropout: float
@@ -135,6 +136,7 @@ def settings_from_config(cfg: DictConfig) -> ParameterComparisonSettings:
         d_model=int(cfg.model.d_model),
         num_layers=int(cfg.model.num_layers),
         num_heads=int(cfg.model.num_heads),
+        transformer_decoder_layers=int(cfg.model.transformer_decoder_layers),
         d_ff=none_or_int(cfg.model.d_ff),
         d_ff_multiplier=int(cfg.model.d_ff_multiplier),
         dropout=float(cfg.model.dropout),
@@ -224,7 +226,8 @@ def parameter_row(
         f"model.d_model={matched_d_model} "
         f"model.d_ff={matched_d_ff} "
         f"model.num_layers={args.num_layers} "
-        f"model.num_heads={args.num_heads}"
+        f"model.num_heads={args.num_heads} "
+        f"model.transformer_decoder_layers={args.transformer_decoder_layers}"
     )
     return ParameterRow(
         problem=problem,
@@ -315,6 +318,7 @@ def count_parameters(
         num_layers=args.num_layers,
         num_heads=args.num_heads,
         d_ff=d_ff,
+        transformer_decoder_layers=args.transformer_decoder_layers,
         dropout=args.dropout,
         tanh_clip=args.tanh_clip,
     )
@@ -395,6 +399,7 @@ def format_rows(
                 "base_d_ff": resolve_d_ff(args, args.d_model),
                 "num_layers": args.num_layers,
                 "num_heads": args.num_heads,
+                "transformer_decoder_layers": args.transformer_decoder_layers,
                 "d_ff_fixed": args.d_ff,
                 "d_ff_multiplier": args.d_ff_multiplier,
                 "min_d_model": args.min_d_model,
@@ -460,6 +465,7 @@ def format_markdown(rows: list[ParameterRow], *, target_params: int) -> str:
             "```bash",
             "uv run python -m src.experiments.run ... "
             "model.d_model=<d_model> model.d_ff=<d_ff> "
+            "model.transformer_decoder_layers=<layers> "
             "parameter_budget.enabled=false",
             "```",
         ]

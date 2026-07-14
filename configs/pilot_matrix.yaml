@@ -17,6 +17,7 @@ decoders:
   - attention_pointer
   - lstm_pointer
   - gru_pointer
+  - transformer_pointer
   - sigmoid_subset
 modes:
   - supervised
@@ -67,6 +68,7 @@ model:
   d_ff: 512
   num_layers: 3
   num_heads: 8
+  transformer_decoder_layers: 1
 
 trainer:
   epochs: 2

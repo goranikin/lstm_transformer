@@ -11,8 +11,9 @@ from src.models.decoders import (
     GRUPointerDecoder,
     LSTMPointerDecoder,
     SigmoidSubsetDecoder,
+    TransformerPointerDecoder,
 )
-from src.models.encoders import AttentionEncoder, LSTMEncoder
+from src.models.encoders import AttentionEncoder
 from src.problems import Problem, make_problem
 
 
@@ -28,6 +29,7 @@ class NCOModel(nn.Module):
         num_layers: int = 3,
         num_heads: int = 8,
         d_ff: int = 512,
+        transformer_decoder_layers: int = 1,
         dropout: float = 0.0,
         tanh_clip: float = 10.0,
     ) -> None:
@@ -36,14 +38,7 @@ class NCOModel(nn.Module):
         self.problem: Problem = make_problem(problem)
         self.encoder_kind = encoder_kind
         self.decoder_kind = decoder_kind
-        if encoder_kind == "lstm":
-            self.encoder = LSTMEncoder(
-                input_dim=input_dim,
-                d_model=d_model,
-                num_layers=1,
-                dropout=dropout,
-            )
-        elif encoder_kind in ("attention", "graph_attention"):
+        if encoder_kind in ("attention", "graph_attention"):
             self.encoder = AttentionEncoder(
                 input_dim=input_dim,
                 d_model=d_model,
@@ -71,6 +66,16 @@ class NCOModel(nn.Module):
             self.decoder = GRUPointerDecoder(
                 d_model=d_model,
                 context_dim=self.problem.context_dim,
+                tanh_clip=tanh_clip,
+            )
+        elif decoder_kind == "transformer_pointer":
+            self.decoder = TransformerPointerDecoder(
+                d_model=d_model,
+                context_dim=self.problem.context_dim,
+                num_heads=num_heads,
+                d_ff=d_ff,
+                num_layers=transformer_decoder_layers,
+                dropout=dropout,
                 tanh_clip=tanh_clip,
             )
         elif decoder_kind == "sigmoid_subset":

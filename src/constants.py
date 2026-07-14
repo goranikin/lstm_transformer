@@ -16,6 +16,7 @@ DecoderKind: TypeAlias = Literal[
     "attention_pointer",
     "lstm_pointer",
     "gru_pointer",
+    "transformer_pointer",
     "sigmoid_subset",
 ]
 
@@ -41,11 +42,12 @@ DECODER_KINDS: tuple[DecoderKind, ...] = (
     "attention_pointer",
     "lstm_pointer",
     "gru_pointer",
+    "transformer_pointer",
     "sigmoid_subset",
 )
 
 AUTOREGRESSIVE_DECODERS = frozenset(
-    {"attention_pointer", "lstm_pointer", "gru_pointer"}
+    {"attention_pointer", "lstm_pointer", "gru_pointer", "transformer_pointer"}
 )
 
 MINIMIZATION_PROBLEMS = frozenset({"tsp", "cvrp", "vertex_cover"})

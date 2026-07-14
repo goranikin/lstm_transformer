@@ -1,7 +1,12 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import torch
+
+if TYPE_CHECKING:
+    from src.problems.base import Problem
 
 
 @dataclass(frozen=True)
@@ -42,7 +47,7 @@ class ProblemState:
 
 @dataclass
 class ProblemDecodeState:
-    problem: Any
+    problem: Problem
     batch: dict[str, Any]
     state: ProblemState
     target_actions: torch.Tensor | None = None

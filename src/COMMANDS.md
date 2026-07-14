@@ -143,7 +143,7 @@ uv run python -m src.experiments.matrix \
 This expands to:
 
 ```text
-1 encoder x 4 decoders x 7 problems x 2 modes x 3 seeds = 168 runs
+1 encoder x 5 decoders x 7 problems x 2 modes x 3 seeds = 210 runs
 ```
 
 ## Staged Execution
@@ -218,7 +218,16 @@ Attention encoder with all decoders:
 ```bash
 uv run python -m src.experiments.matrix \
   'encoders=[attention]' \
-  'decoders=[attention_pointer,lstm_pointer,gru_pointer,sigmoid_subset]' \
+  'decoders=[attention_pointer,lstm_pointer,gru_pointer,transformer_pointer,sigmoid_subset]' \
+  stage=all
+```
+
+Transformer pointer only, with a one-layer causal decoder cell:
+
+```bash
+uv run python -m src.experiments.matrix \
+  'decoders=[transformer_pointer]' \
+  model.transformer_decoder_layers=1 \
   stage=all
 ```
 

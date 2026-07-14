@@ -30,6 +30,7 @@ model:
   d_ff: null
   num_layers: 3
   num_heads: 8
+  transformer_decoder_layers: 1
   dropout: 0.0
   tanh_clip: 10.0
 

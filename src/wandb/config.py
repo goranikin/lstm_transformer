@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from itertools import product
 from pathlib import Path
 
-from src.constants import DECODER_KINDS, MATRIX_ENCODERS, PROBLEM_NAMES
+from src.constants import MATRIX_ENCODERS, PROBLEM_NAMES
 
 RunCombination = tuple[str, str, str, str, int]
 
@@ -12,6 +12,12 @@ DEFAULT_TAG = "supervised"
 DEFAULT_MODE = "supervised"
 DEFAULT_SEED = 1234
 DEFAULT_OUTPUT_DIR = Path("outputs/wandb_export/supervised_seed1234")
+LEGACY_SUPERVISED_DECODERS = (
+    "attention_pointer",
+    "lstm_pointer",
+    "gru_pointer",
+    "sigmoid_subset",
+)
 
 
 @dataclass(frozen=True)
@@ -23,7 +29,8 @@ class ExportSettings:
     seed: int = DEFAULT_SEED
     encoder: str = MATRIX_ENCODERS[0]
     problems: tuple[str, ...] = PROBLEM_NAMES
-    decoders: tuple[str, ...] = DECODER_KINDS
+    # This exporter targets the completed pre-Transformer 28-run snapshot.
+    decoders: tuple[str, ...] = LEGACY_SUPERVISED_DECODERS
     output_dir: Path = DEFAULT_OUTPUT_DIR
     query_page_size: int = 100
     history_page_size: int = 1_000
